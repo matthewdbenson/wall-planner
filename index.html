@@ -2278,10 +2278,17 @@ function initSettings() {
     var name = prompt('Name your family group:');
     if (!name || !name.trim()) return;
     name = name.trim();
-    sb.from('family_groups').insert({ name: name, created_by: currentUser.id, anyone_can_edit: false }).select().then(function(res) {
+    console.log('[createGroup] currentUser:', currentUser);
+    var groupPayload = { name: name, created_by: currentUser && currentUser.id, anyone_can_edit: false };
+    console.log('[createGroup] family_groups insert payload:', groupPayload);
+    sb.from('family_groups').insert(groupPayload).select().then(function(res) {
+      console.log('[createGroup] family_groups response:', { data: res.data, error: res.error });
       if (res.error || !res.data || !res.data[0]) { console.error('create group failed', res.error); return; }
       var grp = res.data[0];
-      sb.from('family_members').insert({ group_id: grp.id, user_id: currentUser.id, email: (currentUser.email || ''), role: 'owner' }).then(function(res2) {
+      var memberPayload = { group_id: grp.id, user_id: currentUser && currentUser.id, email: (currentUser && currentUser.email) || '', role: 'owner' };
+      console.log('[createGroup] family_members insert payload:', memberPayload);
+      sb.from('family_members').insert(memberPayload).select().then(function(res2) {
+        console.log('[createGroup] family_members response:', { data: res2.data, error: res2.error });
         if (res2.error) console.error('add owner member failed', res2.error);
         refreshFamilyUI();
       });
