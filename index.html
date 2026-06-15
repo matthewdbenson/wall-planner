@@ -217,6 +217,10 @@
     margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-light);}
   .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
   .setting-label{font-size:12px;color:var(--text);}
+  .btn-sign-out{margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:4px;
+    padding:6px 14px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-muted);cursor:pointer;}
+  .btn-sign-out:hover{border-color:#c0392b;color:#c0392b;}
   .s-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
   .s-toggle input{display:none;}
   .s-track{width:32px;height:18px;border-radius:9px;background:var(--weekend);border:1px solid var(--border);
@@ -410,6 +414,74 @@
     letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
   .btn-secondary:hover{color:var(--text);border-color:var(--text);}
 
+  /* family (shared) entries on the wall chart */
+  .day-cell.hl-family-1{background:rgba(253,230,138,0.55)!important;}
+  .day-cell.hl-family-2{background:rgba(187,247,208,0.55)!important;}
+  .day-cell.hl-family-3{background:rgba(191,219,254,0.55)!important;}
+  .day-cell.hl-family-4{background:rgba(254,202,202,0.55)!important;}
+  .day-cell.hl-family-5{background:rgba(233,213,255,0.55)!important;}
+  .ind-fam{font-size:9px;line-height:1;}
+  .fam-note{font-size:10px;font-family:'DM Sans',sans-serif;font-style:italic;color:var(--text-muted);
+    padding:0 5px 2px;line-height:1.3;pointer-events:none;}
+  .fam-note .fam-tag{font-style:normal;opacity:0.65;margin-right:2px;}
+
+  /* family event popover (mirrors #recur-pop) */
+  #fam-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:14px 16px;width:248px;display:none;}
+  #fam-pop.visible{display:block;}
+  #fam-pop h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:10px;}
+  #fam-pop label{display:block;font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;margin-top:10px;}
+  #fam-note,#fam-group{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:5px 7px;
+    font-size:11px;font-family:'DM Sans',sans-serif;background:white;color:var(--text);outline:none;resize:none;}
+  .fam-swatches{display:flex;gap:5px;margin-top:4px;}
+  .fam-swatch{width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;}
+  .fam-swatch:hover{transform:scale(1.15);}
+  .fam-swatch.active{border-color:var(--text);}
+  .fam-swatch[data-rc="0"]{background:white;border-color:var(--border);}
+  .fam-swatch[data-rc="1"]{background:var(--h1);}
+  .fam-swatch[data-rc="2"]{background:var(--h2);}
+  .fam-swatch[data-rc="3"]{background:var(--h3);}
+  .fam-swatch[data-rc="4"]{background:var(--h4);}
+  .fam-swatch[data-rc="5"]{background:var(--h5);}
+  .fam-imp-row{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:10px;
+    font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);cursor:pointer;}
+  .fam-btns{display:flex;gap:6px;margin-top:14px;}
+  .fam-btns button{flex:1;padding:5px 0;font-size:10px;font-family:'DM Mono',monospace;
+    letter-spacing:.08em;text-transform:uppercase;border-radius:4px;cursor:pointer;border:1px solid var(--border);}
+  #fam-save{background:var(--text);color:white;border-color:var(--text);}
+  #fam-cancel{background:transparent;color:var(--text-muted);}
+
+  /* projects view toggle (My / Family) */
+  .proj-view-toggle{display:flex;background:var(--weekend);border-radius:20px;padding:2px;
+    border:1px solid var(--border-light);gap:1px;margin-bottom:14px;width:fit-content;}
+  .proj-view-toggle button{border:none;background:transparent;border-radius:16px;padding:5px 16px;font-size:10px;
+    font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--text-muted);
+    transition:background .15s,color .15s;}
+  .proj-view-toggle button.active{background:var(--text);color:#fff;}
+  .group-badge{display:inline-block;background:var(--weekend);border:1px solid var(--border-light);
+    border-radius:10px;padding:1px 8px;font-size:9px;font-family:'DM Mono',monospace;letter-spacing:.04em;
+    color:var(--text-muted);margin-left:6px;vertical-align:middle;}
+
+  /* settings: family section */
+  .family-group{border:1px solid var(--border-light);border-radius:6px;padding:12px;margin-bottom:12px;}
+  .family-group-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+  .family-group-role{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px;}
+  .family-member{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:11px;color:var(--text);padding:3px 0;}
+  .family-member .fm-role{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+  .family-member .fm-remove{background:none;border:none;color:#c0392b;cursor:pointer;font-size:12px;padding:0 4px;}
+  .family-invite-row{display:flex;gap:6px;margin-top:8px;}
+  .family-invite-row input{flex:1;border:1px solid var(--border-light);border-radius:4px;padding:5px 7px;
+    font-size:11px;background:white;color:var(--text);outline:none;}
+  .family-invite-row button,.btn-create-group{background:var(--text);color:white;border:none;border-radius:4px;
+    padding:5px 12px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  .family-edit-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;
+    font-size:11px;color:var(--text);}
+  .btn-create-group{margin-top:4px;}
+
   /* mobile-only elements are hidden on desktop */
   .mobile-only{display:none;}
 
@@ -480,7 +552,7 @@
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     html,body{width:100%;height:100%;margin:0;padding:0;}
     #page-nav,#toolbar,#legend,#settings-overlay,#settings-drawer,
-    #ctx-menu,#recur-pop,#icon-pop,#print-size-pop,#ai-overlay,
+    #ctx-menu,#recur-pop,#fam-pop,#icon-pop,#print-size-pop,#ai-overlay,
     #projects-page{display:none!important;}
     body{background:white;}
     #print-header{display:block!important;}
@@ -574,6 +646,10 @@
 </div>
 
 <div id="projects-page">
+  <div class="proj-view-toggle" id="proj-view-toggle" style="display:none;">
+    <button data-view="mine" class="active">My Projects</button>
+    <button data-view="family">Family Projects</button>
+  </div>
   <div class="proj-filter-row">
     <span class="proj-filter-label">Filter:</span>
     <select id="proj-filter-priority">
@@ -676,6 +752,10 @@
           </select>
         </div>
       </div>
+      <div class="form-group" id="pf-group-wrap" style="display:none;">
+        <label>Family group</label>
+        <select id="pf-group"></select>
+      </div>
       <div class="form-group">
         <label>Shared with (names, comma-separated)</label>
         <input type="text" id="pf-shared" placeholder="e.g. Gill, Katie">
@@ -702,6 +782,32 @@
   <div class="ctx-item" id="ctx-edit">&#8635; Edit recurrence</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item danger" id="ctx-remove">Remove recurrence</div>
+  <div class="ctx-sep" id="ctx-fam-sep" style="display:none;"></div>
+  <div class="ctx-item" id="ctx-fam-add" style="display:none;">&#128103; Add as family event</div>
+  <div class="ctx-item" id="ctx-fam-edit" style="display:none;">&#128103; Edit family event</div>
+  <div class="ctx-item danger" id="ctx-fam-remove" style="display:none;">Remove family event</div>
+</div>
+
+<div id="fam-pop">
+  <h3 id="fam-pop-title">Family event</h3>
+  <label>Note</label>
+  <textarea id="fam-note" rows="2" placeholder="e.g. School play"></textarea>
+  <label>Colour (optional)</label>
+  <div class="fam-swatches">
+    <div class="fam-swatch active" data-rc="0"></div>
+    <div class="fam-swatch" data-rc="1"></div>
+    <div class="fam-swatch" data-rc="2"></div>
+    <div class="fam-swatch" data-rc="3"></div>
+    <div class="fam-swatch" data-rc="4"></div>
+    <div class="fam-swatch" data-rc="5"></div>
+  </div>
+  <label id="fam-group-label" style="display:none;">Group</label>
+  <select id="fam-group" style="display:none;"></select>
+  <label class="fam-imp-row"><input type="checkbox" id="fam-important"> Mark as important</label>
+  <div class="fam-btns">
+    <button id="fam-save">Save</button>
+    <button id="fam-cancel">Cancel</button>
+  </div>
 </div>
 
 <div id="recur-pop">
@@ -761,6 +867,19 @@
         </div>
         <div id="hol-status" style="font-size:10px;color:var(--text-muted);margin-top:8px;font-style:italic;"></div>
       </div>
+    </div>
+    <div class="setting-section">
+      <h3>Family</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Shared calendars and projects with family members.</p>
+      <div id="family-groups-list"></div>
+      <button class="btn-create-group" id="btn-create-group">+ Create new group</button>
+    </div>
+    <div class="setting-section">
+      <h3>Account</h3>
+      <div class="setting-row">
+        <span class="setting-label">Signed in as <span id="signed-in-email" style="font-weight:600"></span></span>
+      </div>
+      <button id="btn-sign-out" class="btn-sign-out">Sign out</button>
     </div>
   </div>
 </div>
@@ -1001,6 +1120,54 @@ async function loadAboutMe() { aboutMe = (await dbLoad(ABOUT_KEY, '')) || ''; }
 function saveAboutMe() { dbSave(ABOUT_KEY, aboutMe); }
 async function loadLegend() { legendLabels = (await dbLoad(LEGEND_KEY, {})) || {}; }
 function saveLegend() { dbSave(LEGEND_KEY, legendLabels); }
+
+// ---- Family / group data ----
+var familyGroups = [];   // groups the user belongs to
+var familyMembers = [];  // all members across those groups
+var familyEntries = [];  // shared calendar entries
+var familyProjects = []; // shared projects
+
+async function loadFamilyData() {
+  familyGroups = []; familyMembers = []; familyEntries = []; familyProjects = [];
+  if (!currentUser) return;
+  try {
+    // Groups I'm a member of
+    var mine = await sb.from('family_members').select('group_id').eq('user_id', currentUser.id);
+    var groupIds = (mine.data || []).map(function(r) { return r.group_id; });
+    if (!groupIds.length) return;
+
+    var res = await Promise.all([
+      sb.from('family_groups').select('*').in('id', groupIds),
+      sb.from('family_members').select('*').in('group_id', groupIds),
+      sb.from('family_entries').select('*').in('group_id', groupIds),
+      sb.from('family_projects').select('*').in('group_id', groupIds)
+    ]);
+    familyGroups = res[0].data || [];
+    familyMembers = res[1].data || [];
+    familyEntries = res[2].data || [];
+    familyProjects = res[3].data || [];
+  } catch(e) { console.error('loadFamilyData failed', e); }
+}
+
+function groupById(id) {
+  for (var i = 0; i < familyGroups.length; i++) { if (familyGroups[i].id === id) return familyGroups[i]; }
+  return null;
+}
+function isGroupOwner(group) { return !!(group && currentUser && group.created_by === currentUser.id); }
+// Can the current user edit a shared row (entry/project)?
+function canEditFamily(row) {
+  if (!row || !currentUser) return false;
+  if (row.created_by === currentUser.id) return true;
+  var g = groupById(row.group_id);
+  return !!(g && g.anyone_can_edit);
+}
+// Delete is creator-only (matches the RLS delete policy)
+function canDeleteFamily(row) {
+  return !!(row && currentUser && row.created_by === currentUser.id);
+}
+function familyEntriesForDate(dateStr) {
+  return familyEntries.filter(function(e) { return e.date === dateStr; });
+}
 
 // Key helpers
 function dayKey(y, m, d) {
@@ -1299,6 +1466,37 @@ function makeCell(y, m, d, isGhost) {
     });
   }
 
+  // Shared family entries (personal entries always take visual precedence)
+  if (!isGhost) {
+    var famList = familyEntriesForDate(key);
+    if (famList.length) {
+      var famIcon = document.createElement('span');
+      famIcon.className = 'ind-fam';
+      famIcon.textContent = '\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67';
+      famIcon.title = 'Family event';
+      tray.appendChild(famIcon);
+      // Tint the cell only when there is no personal colour
+      if (!eff.color) {
+        var colored = null;
+        for (var fi = 0; fi < famList.length; fi++) { if (famList[fi].color) { colored = famList[fi]; break; } }
+        if (colored) cell.classList.add('hl-family-' + colored.color);
+      }
+      // Family note(s) below the personal note (smaller italic)
+      famList.forEach(function(fe) {
+        if (!fe.note) return;
+        var g = groupById(fe.group_id);
+        var fn = document.createElement('div');
+        fn.className = 'fam-note';
+        var tag = document.createElement('span');
+        tag.className = 'fam-tag';
+        tag.textContent = '\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67' + (g ? ' ' + g.name : '');
+        fn.appendChild(tag);
+        fn.appendChild(document.createTextNode((fe.important ? '\u2605 ' : '') + fe.note));
+        cell.appendChild(fn);
+      });
+    }
+  }
+
   attachEvents(cell, note, key);
   return cell;
 }
@@ -1532,7 +1730,9 @@ function initContextMenu() {
   var pop = document.getElementById('recur-pop');
   var iconPop = document.getElementById('icon-pop');
   var iconGrid = document.getElementById('icon-grid');
+  var famPop = document.getElementById('fam-pop');
   var ctxKey = null, ctxM = null, ctxD = null, recurColor = 0;
+  var famColor = 0, famEditId = null;
   var longPressTimer = null;
 
   // Build icon grid
@@ -1562,6 +1762,18 @@ function initContextMenu() {
     document.getElementById('ctx-add').style.display = hasR ? 'none' : 'block';
     document.getElementById('ctx-edit').style.display = hasR ? 'block' : 'none';
     document.getElementById('ctx-remove').style.display = hasR ? 'block' : 'none';
+    // Family event options
+    var famList = familyEntriesForDate(key);
+    var hasGroups = familyGroups.length > 0;
+    var famEditable = null, famRemovable = null;
+    for (var i = 0; i < famList.length; i++) {
+      if (!famEditable && canEditFamily(famList[i])) famEditable = famList[i];
+      if (!famRemovable && canDeleteFamily(famList[i])) famRemovable = famList[i];
+    }
+    document.getElementById('ctx-fam-sep').style.display = hasGroups ? 'block' : 'none';
+    document.getElementById('ctx-fam-add').style.display = hasGroups ? 'block' : 'none';
+    document.getElementById('ctx-fam-edit').style.display = famEditable ? 'block' : 'none';
+    document.getElementById('ctx-fam-remove').style.display = famRemovable ? 'block' : 'none';
     var px = Math.min(x, window.innerWidth - 200);
     var py = Math.min(y, window.innerHeight - 240);
     menu.style.left = px + 'px';
@@ -1586,6 +1798,36 @@ function initContextMenu() {
     document.getElementById('recur-note').focus();
   }
   function hidePop() { pop.classList.remove('visible'); }
+
+  function showFamPop(x, y, entry) {
+    famEditId = entry ? entry.id : null;
+    document.getElementById('fam-pop-title').textContent = entry ? 'Edit family event' : 'Add family event';
+    document.getElementById('fam-note').value = entry ? (entry.note || '') : '';
+    famColor = entry ? (entry.color || 0) : 0;
+    document.querySelectorAll('.fam-swatch').forEach(function(s) {
+      s.classList.toggle('active', parseInt(s.dataset.rc) === famColor);
+    });
+    document.getElementById('fam-important').checked = entry ? !!entry.important : false;
+    var groupLabel = document.getElementById('fam-group-label');
+    var groupSel = document.getElementById('fam-group');
+    if (!entry && familyGroups.length > 1) {
+      groupSel.innerHTML = '';
+      familyGroups.forEach(function(g) {
+        var o = document.createElement('option'); o.value = g.id; o.textContent = g.name; groupSel.appendChild(o);
+      });
+      groupLabel.style.display = 'block';
+      groupSel.style.display = 'block';
+    } else {
+      groupLabel.style.display = 'none';
+      groupSel.style.display = 'none';
+    }
+    var px = Math.min(x, window.innerWidth - 264);
+    var py = Math.min(y, window.innerHeight - 300);
+    famPop.style.left = px + 'px'; famPop.style.top = py + 'px';
+    famPop.classList.add('visible');
+    document.getElementById('fam-note').focus();
+  }
+  function hideFamPop() { famPop.classList.remove('visible'); }
 
   function showIconPop(x, y, key) {
     var curIcon = iconData[key] || '';
@@ -1621,6 +1863,7 @@ function initContextMenu() {
     if (!menu.contains(e.target)) hideMenu();
     if (!pop.contains(e.target) && !menu.contains(e.target)) hidePop();
     if (!iconPop.contains(e.target) && !menu.contains(e.target)) hideIconPop();
+    if (!famPop.contains(e.target) && !menu.contains(e.target)) hideFamPop();
   });
 
   document.getElementById('ctx-star-add').addEventListener('click', function() { hideMenu(); applyImportantToKey(ctxKey, true); saveData(); });
@@ -1651,6 +1894,70 @@ function initContextMenu() {
     saveRecur(); hidePop(); render();
   });
   document.getElementById('recur-cancel').addEventListener('click', hidePop);
+
+  // --- Family events ---
+  document.getElementById('ctx-fam-add').addEventListener('click', function() {
+    hideMenu();
+    showFamPop(parseInt(menu.style.left), parseInt(menu.style.top), null);
+  });
+  document.getElementById('ctx-fam-edit').addEventListener('click', function() {
+    hideMenu();
+    var list = familyEntriesForDate(ctxKey);
+    var ed = null;
+    for (var i = 0; i < list.length; i++) { if (canEditFamily(list[i])) { ed = list[i]; break; } }
+    if (ed) showFamPop(parseInt(menu.style.left), parseInt(menu.style.top), ed);
+  });
+  document.getElementById('ctx-fam-remove').addEventListener('click', function() {
+    hideMenu();
+    var list = familyEntriesForDate(ctxKey);
+    var rm = null;
+    for (var i = 0; i < list.length; i++) { if (canDeleteFamily(list[i])) { rm = list[i]; break; } }
+    if (!rm) return;
+    sb.from('family_entries').delete().eq('id', rm.id).then(function(res) {
+      if (res.error) { console.error('family entry delete failed', res.error); return; }
+      familyEntries = familyEntries.filter(function(e) { return e.id !== rm.id; });
+      render();
+    });
+  });
+
+  document.querySelectorAll('.fam-swatch').forEach(function(s) {
+    s.addEventListener('click', function() {
+      famColor = parseInt(s.dataset.rc);
+      document.querySelectorAll('.fam-swatch').forEach(function(x) { x.classList.remove('active'); });
+      s.classList.add('active');
+    });
+  });
+
+  document.getElementById('fam-save').addEventListener('click', function() {
+    var note = document.getElementById('fam-note').value.trim();
+    var important = document.getElementById('fam-important').checked;
+    if (!note && !famColor && !important) { hideFamPop(); return; }
+    if (famEditId) {
+      sb.from('family_entries').update({
+        note: note, color: famColor, important: important, updated_at: new Date().toISOString()
+      }).eq('id', famEditId).select().then(function(res) {
+        if (res.error) { console.error('family entry update failed', res.error); return; }
+        if (res.data && res.data[0]) {
+          var idx = familyEntries.findIndex(function(e) { return e.id === famEditId; });
+          if (idx >= 0) familyEntries[idx] = res.data[0];
+        }
+        hideFamPop(); render();
+      });
+    } else {
+      var sel = document.getElementById('fam-group');
+      var gid = (familyGroups.length > 1 && sel.value) ? sel.value : (familyGroups[0] && familyGroups[0].id);
+      if (!gid) { hideFamPop(); return; }
+      sb.from('family_entries').insert({
+        group_id: gid, created_by: currentUser.id, date: ctxKey,
+        note: note, color: famColor, important: important
+      }).select().then(function(res) {
+        if (res.error) { console.error('family entry insert failed', res.error); return; }
+        if (res.data && res.data[0]) familyEntries.push(res.data[0]);
+        hideFamPop(); render();
+      });
+    }
+  });
+  document.getElementById('fam-cancel').addEventListener('click', hideFamPop);
 
   iconGrid.addEventListener('click', function(e) {
     var opt = e.target.closest('.icon-opt');
@@ -1702,13 +2009,19 @@ function initSettings() {
     document.getElementById('about-me').value = aboutMe;
     document.getElementById('hol-enabled').checked = holSettings.enabled;
     document.getElementById('hol-countries-wrap').style.display = holSettings.enabled ? 'block' : 'none';
+    document.getElementById('signed-in-email').textContent = (currentUser && currentUser.email) || '';
     renderCountryList(); renderCountrySelect();
+    renderFamilyGroups();
   }
   function closeSettings() { overlay.classList.remove('visible'); drawer.classList.remove('visible'); }
 
   document.getElementById('btn-settings').addEventListener('click', openSettings);
   document.getElementById('drawer-close').addEventListener('click', closeSettings);
   overlay.addEventListener('click', closeSettings);
+
+  document.getElementById('btn-sign-out').addEventListener('click', function() {
+    sb.auth.signOut().then(function() { window.location.reload(); });
+  });
 
   document.getElementById('save-about').addEventListener('click', function() {
     aboutMe = document.getElementById('about-me').value;
@@ -1771,6 +2084,129 @@ function initSettings() {
       sel.appendChild(opt);
     });
   }
+
+  // ---- Family groups ----
+  function refreshFamilyUI() {
+    return loadFamilyData().then(function() {
+      renderFamilyGroups();
+      render();
+      renderProjects();
+      var vt = document.getElementById('proj-view-toggle');
+      if (vt && familyGroups.length) vt.style.display = 'flex';
+    });
+  }
+
+  function renderFamilyGroups() {
+    var wrap = document.getElementById('family-groups-list');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!familyGroups.length) {
+      wrap.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">You\'re not in any family groups yet.</p>';
+      return;
+    }
+    familyGroups.forEach(function(group) {
+      var owner = isGroupOwner(group);
+      var members = familyMembers.filter(function(m) { return m.group_id === group.id; });
+      var box = document.createElement('div');
+      box.className = 'family-group';
+
+      var nameEl = document.createElement('div');
+      nameEl.className = 'family-group-name';
+      nameEl.textContent = group.name;
+      box.appendChild(nameEl);
+
+      var roleEl = document.createElement('div');
+      roleEl.className = 'family-group-role';
+      roleEl.textContent = owner ? 'Owner' : 'Member';
+      box.appendChild(roleEl);
+
+      members.forEach(function(m) {
+        var row = document.createElement('div');
+        row.className = 'family-member';
+        var left = document.createElement('span');
+        left.textContent = m.email + ' ';
+        var roleSpan = document.createElement('span');
+        roleSpan.className = 'fm-role';
+        roleSpan.textContent = m.role || 'member';
+        left.appendChild(roleSpan);
+        row.appendChild(left);
+        if (owner && m.user_id !== currentUser.id) {
+          var rmBtn = document.createElement('button');
+          rmBtn.className = 'fm-remove';
+          rmBtn.textContent = '✕';
+          rmBtn.title = 'Remove member';
+          rmBtn.addEventListener('click', function() {
+            sb.from('family_members').delete().eq('group_id', group.id).eq('user_id', m.user_id).then(function(res) {
+              if (res.error) { console.error('remove member failed', res.error); return; }
+              refreshFamilyUI();
+            });
+          });
+          row.appendChild(rmBtn);
+        }
+        box.appendChild(row);
+      });
+
+      if (owner) {
+        var toggleRow = document.createElement('label');
+        toggleRow.className = 'family-edit-toggle';
+        var tspan = document.createElement('span');
+        tspan.textContent = 'Anyone can edit shared items';
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = !!group.anyone_can_edit;
+        chk.addEventListener('change', function() {
+          sb.from('family_groups').update({ anyone_can_edit: chk.checked }).eq('id', group.id).then(function(res) {
+            if (res.error) { console.error('group update failed', res.error); chk.checked = !chk.checked; return; }
+            group.anyone_can_edit = chk.checked;
+          });
+        });
+        toggleRow.appendChild(tspan);
+        toggleRow.appendChild(chk);
+        box.appendChild(toggleRow);
+
+        var inviteRow = document.createElement('div');
+        inviteRow.className = 'family-invite-row';
+        var inp = document.createElement('input');
+        inp.type = 'email';
+        inp.placeholder = 'invite by email';
+        var invBtn = document.createElement('button');
+        invBtn.textContent = 'Invite';
+        var status = document.createElement('div');
+        status.style.cssText = 'font-size:10px;color:var(--text-muted);margin-top:4px;';
+        invBtn.addEventListener('click', function() {
+          var email = inp.value.trim();
+          if (!email) return;
+          status.textContent = 'Inviting...';
+          sb.from('family_members').insert({ group_id: group.id, email: email, role: 'member' }).then(function(res) {
+            if (res.error) { status.textContent = 'Could not invite: ' + res.error.message; return; }
+            inp.value = '';
+            status.textContent = 'Invited ' + email;
+            refreshFamilyUI();
+          });
+        });
+        inviteRow.appendChild(inp);
+        inviteRow.appendChild(invBtn);
+        box.appendChild(inviteRow);
+        box.appendChild(status);
+      }
+
+      wrap.appendChild(box);
+    });
+  }
+
+  document.getElementById('btn-create-group').addEventListener('click', function() {
+    var name = prompt('Name your family group:');
+    if (!name || !name.trim()) return;
+    name = name.trim();
+    sb.from('family_groups').insert({ name: name, created_by: currentUser.id, anyone_can_edit: false }).select().then(function(res) {
+      if (res.error || !res.data || !res.data[0]) { console.error('create group failed', res.error); return; }
+      var grp = res.data[0];
+      sb.from('family_members').insert({ group_id: grp.id, user_id: currentUser.id, email: (currentUser.email || ''), role: 'owner' }).then(function(res2) {
+        if (res2.error) console.error('add owner member failed', res2.error);
+        refreshFamilyUI();
+      });
+    });
+  });
 }
 
 // AI Advisor
@@ -1806,7 +2242,8 @@ function buildCalendarContext() {
         var ic = null;
         if (iconId) { for (var i = 0; i < ICONS.length; i++) { if (ICONS[i].id === iconId) { ic = ICONS[i]; break; } } }
         var hols = getHolidaysForDate(k).map(function(h) { return h.name + (h.estimated ? ' (est.)' : ''); }).join(', ');
-        var hasData = entry.note || entry.color || entry.important || iconId || rec.note || rec.color || hols;
+        var fams = familyEntriesForDate(k);
+        var hasData = entry.note || entry.color || entry.important || iconId || rec.note || rec.color || hols || fams.length;
         if (!hasData) { if (!isWknd) emptyCount++; continue; }
         var parts = [];
         if (entry.note) parts.push('note: "' + entry.note + '"');
@@ -1816,6 +2253,10 @@ function buildCalendarContext() {
         if (entry.important) parts.push('IMPORTANT');
         if (ic) parts.push('icon: ' + ic.label);
         if (hols) parts.push('holiday: ' + hols);
+        fams.forEach(function(fe) {
+          var fg = groupById(fe.group_id);
+          parts.push('family event' + (fg ? ' [' + fg.name + ']' : '') + ': "' + (fe.note || '') + '"' + (fe.important ? ' IMPORTANT' : ''));
+        });
         mLines.push('  ' + k + ' ' + DOW[dow] + (isWknd ? ' [wknd]' : '') + ': ' + (parts.join(', ') || 'empty'));
       }
       if (mLines.length) lines.push(MONTHS[m].toUpperCase() + ' ' + y + ':\n' + mLines.join('\n'));
@@ -1970,8 +2411,16 @@ var projects = [];
 var projEditId = null;
 var projSortCol = 'priority';
 var projSortDir = 1;
+var projView = 'mine'; // 'mine' | 'family'
 
 var PRIORITY_ORDER = {urgent:0, high:1, medium:2, low:3};
+
+// Normalise a family_projects row (DB columns) into the shape renderProjects/helpers expect
+function normFamProj(p) {
+  return { id:p.id, name:p.name, desc:p.description, weeks:p.weeks, days:p.days, priority:p.priority,
+    deadline:p.deadline, travel:p.travel, owner:p.owner, sharedWith:p.shared_with, notes:p.notes,
+    status:p.status, group_id:p.group_id, created_by:p.created_by, _fam:true };
+}
 
 async function loadProjects() { projects = (await dbLoad(PROJ_KEY, [])) || []; }
 function saveProjects() { dbSave(PROJ_KEY, projects); }
@@ -2008,7 +2457,10 @@ function renderProjects() {
   var filterTravel = document.getElementById('proj-filter-travel').value;
   var search = (document.getElementById('proj-search').value || '').toLowerCase();
 
-  var filtered = projects.filter(function(p) {
+  var source = projView === 'family' ? familyProjects.map(normFamProj) : projects;
+  var isFamily = projView === 'family';
+
+  var filtered = source.filter(function(p) {
     if (filterPri && p.priority !== filterPri) return false;
     if (filterStatus === 'active' && p.status === 'scheduled') return false;
     if (filterStatus === 'scheduled' && p.status !== 'scheduled') return false;
@@ -2032,7 +2484,8 @@ function renderProjects() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="proj-empty">No projects yet. Click "+ Add Project" to get started.</td></tr>';
+    var emptyMsg = isFamily ? 'No family projects yet. Click "+ Add Project" to share one.' : 'No projects yet. Click "+ Add Project" to get started.';
+    tbody.innerHTML = '<tr><td colspan="8" class="proj-empty">' + emptyMsg + '</td></tr>';
     return;
   }
 
@@ -2042,19 +2495,26 @@ function renderProjects() {
     if (proj.status === 'scheduled') tr.classList.add('proj-scheduled');
     var deadline = proj.deadline ? proj.deadline : '<span style="color:var(--text-muted)">N/A</span>';
     var owner = proj.owner || '<span style="color:var(--text-muted)">—</span>';
+    var badge = '';
+    if (isFamily) {
+      var g = groupById(proj.group_id);
+      if (g) badge = '<span class="group-badge">' + escHtml(g.name) + '</span>';
+    }
+    // Edit/delete gating for family projects
+    var canEdit = !isFamily || canEditFamily(proj);
+    var canDelete = !isFamily || canDeleteFamily(proj);
+    var actions = '<button class="btn-proj-action find-time" data-id="' + proj.id + '">Find time</button>';
+    if (canEdit) actions += '<button class="btn-proj-action" data-id="' + proj.id + '" data-action="edit">Edit</button>';
+    if (canDelete) actions += '<button class="btn-proj-action danger" data-id="' + proj.id + '" data-action="delete">Delete</button>';
     tr.innerHTML =
-      '<td><strong>' + escHtml(proj.name) + '</strong>' + (proj.desc ? '<br><span style="font-size:11px;color:var(--text-muted)">' + escHtml(proj.desc.substring(0,60)) + (proj.desc.length>60?'...':'') + '</span>' : '') + '</td>' +
+      '<td><strong>' + escHtml(proj.name) + '</strong>' + badge + (proj.desc ? '<br><span style="font-size:11px;color:var(--text-muted)">' + escHtml(proj.desc.substring(0,60)) + (proj.desc.length>60?'...':'') + '</span>' : '') + '</td>' +
       '<td style="white-space:nowrap">' + durationStr(proj.weeks, proj.days) + '</td>' +
       '<td>' + priorityBadge(proj.priority) + '</td>' +
       '<td>' + (proj.travel === 'yes' ? '✈️ Yes' : 'No') + '</td>' +
       '<td>' + escHtml(owner) + '</td>' +
       '<td style="white-space:nowrap">' + deadline + '</td>' +
       '<td>' + sharedBadges(proj) + '</td>' +
-      '<td><div class="proj-actions">' +
-        '<button class="btn-proj-action find-time" data-id="' + proj.id + '">Find time</button>' +
-        '<button class="btn-proj-action" data-id="' + proj.id + '" data-action="edit">Edit</button>' +
-        '<button class="btn-proj-action danger" data-id="' + proj.id + '" data-action="delete">Delete</button>' +
-      '</div></td>';
+      '<td><div class="proj-actions">' + actions + '</div></td>';
     tbody.appendChild(tr);
   });
 }
@@ -2065,8 +2525,12 @@ function escHtml(str) {
 
 function openProjModal(id) {
   projEditId = id || null;
-  var proj = id ? projects.find(function(p) { return p.id === id; }) : null;
-  document.getElementById('proj-modal-title').textContent = proj ? 'Edit Project' : 'New Project';
+  var isFamily = projView === 'family';
+  var proj = id
+    ? (isFamily ? normFamProj(familyProjects.find(function(p){ return p.id === id; }) || {}) : projects.find(function(p) { return p.id === id; }))
+    : null;
+  document.getElementById('proj-modal-title').textContent =
+    proj ? (isFamily ? 'Edit Family Project' : 'Edit Project') : (isFamily ? 'New Family Project' : 'New Project');
   document.getElementById('pf-name').value = proj ? proj.name : '';
   document.getElementById('pf-desc').value = proj ? (proj.desc || '') : '';
   document.getElementById('pf-weeks').value = proj ? (proj.weeks || 0) : 0;
@@ -2078,6 +2542,20 @@ function openProjModal(id) {
   document.getElementById('pf-shared').value = proj ? (proj.sharedWith || '') : '';
   document.getElementById('pf-notes').value = proj ? (proj.notes || '') : '';
   document.getElementById('pf-status').value = proj ? (proj.status || 'active') : 'active';
+  // Family group selector
+  var gw = document.getElementById('pf-group-wrap');
+  var gsel = document.getElementById('pf-group');
+  if (isFamily) {
+    gsel.innerHTML = '';
+    familyGroups.forEach(function(g) {
+      var o = document.createElement('option'); o.value = g.id; o.textContent = g.name; gsel.appendChild(o);
+    });
+    gsel.value = proj ? proj.group_id : (familyGroups[0] && familyGroups[0].id);
+    gsel.disabled = !!proj; // group is fixed once created
+    gw.style.display = familyGroups.length ? 'block' : 'none';
+  } else {
+    gw.style.display = 'none';
+  }
   document.getElementById('proj-modal-overlay').classList.add('visible');
   document.getElementById('pf-name').focus();
 }
@@ -2088,6 +2566,7 @@ function closeProjModal() {
 }
 
 function saveProjModal() {
+  if (projView === 'family') { saveFamilyProject(); return; }
   var name = document.getElementById('pf-name').value.trim();
   if (!name) { document.getElementById('pf-name').focus(); return; }
   var proj = {
@@ -2116,14 +2595,62 @@ function saveProjModal() {
   renderProjects();
 }
 
+function saveFamilyProject() {
+  var name = document.getElementById('pf-name').value.trim();
+  if (!name) { document.getElementById('pf-name').focus(); return; }
+  var row = {
+    name: name,
+    description: document.getElementById('pf-desc').value.trim(),
+    weeks: parseInt(document.getElementById('pf-weeks').value) || 0,
+    days: parseInt(document.getElementById('pf-days').value) || 1,
+    priority: document.getElementById('pf-priority').value,
+    deadline: document.getElementById('pf-deadline').value,
+    travel: document.getElementById('pf-travel').value,
+    owner: document.getElementById('pf-owner').value.trim(),
+    shared_with: document.getElementById('pf-shared').value.trim(),
+    notes: document.getElementById('pf-notes').value.trim(),
+    status: document.getElementById('pf-status').value,
+    updated_at: new Date().toISOString()
+  };
+  if (projEditId) {
+    sb.from('family_projects').update(row).eq('id', projEditId).select().then(function(res) {
+      if (res.error) { console.error('family project update failed', res.error); return; }
+      if (res.data && res.data[0]) {
+        var idx = familyProjects.findIndex(function(p) { return p.id === projEditId; });
+        if (idx >= 0) familyProjects[idx] = res.data[0];
+      }
+      closeProjModal(); renderProjects();
+    });
+  } else {
+    var gid = document.getElementById('pf-group').value || (familyGroups[0] && familyGroups[0].id);
+    if (!gid) { closeProjModal(); return; }
+    row.group_id = gid;
+    row.created_by = currentUser.id;
+    sb.from('family_projects').insert(row).select().then(function(res) {
+      if (res.error) { console.error('family project insert failed', res.error); return; }
+      if (res.data && res.data[0]) familyProjects.push(res.data[0]);
+      closeProjModal(); renderProjects();
+    });
+  }
+}
+
 function deleteProject(id) {
+  if (projView === 'family') {
+    sb.from('family_projects').delete().eq('id', id).then(function(res) {
+      if (res.error) { console.error('family project delete failed', res.error); return; }
+      familyProjects = familyProjects.filter(function(p) { return p.id !== id; });
+      renderProjects();
+    });
+    return;
+  }
   projects = projects.filter(function(p) { return p.id !== id; });
   saveProjects();
   renderProjects();
 }
 
 function findTimeForProject(id) {
-  var proj = projects.find(function(p) { return p.id === id; });
+  var proj = projects.find(function(p) { return p.id === id; }) ||
+             familyProjects.find(function(p) { return p.id === id; });
   if (!proj) return;
   // Switch to AI chat and pre-load a message
   document.body.classList.remove('page-projects');
@@ -2160,6 +2687,18 @@ function initProjects() {
       } else {
         document.body.classList.remove('page-projects');
       }
+    });
+  });
+
+  // My / Family view toggle (only shown if the user belongs to a group)
+  var viewToggle = document.getElementById('proj-view-toggle');
+  if (familyGroups.length) viewToggle.style.display = 'flex';
+  viewToggle.querySelectorAll('button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      projView = btn.dataset.view;
+      viewToggle.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderProjects();
     });
   });
 
@@ -2219,16 +2758,31 @@ function initProjects() {
 }
 
 function buildProjectContext() {
-  if (!projects.length) return '';
-  var lines = ['PROJECTS (unscheduled):'];
-  projects.forEach(function(p) {
-    if (p.status === 'scheduled') return;
-    var line = '  [' + p.priority.toUpperCase() + '] ' + p.name + ' (' + durationStr(p.weeks, p.days) + ')';
-    if (p.deadline) line += ' deadline:' + p.deadline;
-    if (p.travel === 'yes') line += ' [travel required]';
-    if (p.notes) line += ' - ' + p.notes;
-    lines.push(line);
-  });
+  var lines = [];
+  var personal = projects.filter(function(p) { return p.status !== 'scheduled'; });
+  if (personal.length) {
+    lines.push('PROJECTS (unscheduled):');
+    personal.forEach(function(p) {
+      var line = '  [' + p.priority.toUpperCase() + '] ' + p.name + ' (' + durationStr(p.weeks, p.days) + ')';
+      if (p.deadline) line += ' deadline:' + p.deadline;
+      if (p.travel === 'yes') line += ' [travel required]';
+      if (p.notes) line += ' - ' + p.notes;
+      lines.push(line);
+    });
+  }
+  var fam = familyProjects.filter(function(p) { return p.status !== 'scheduled'; });
+  if (fam.length) {
+    if (lines.length) lines.push('');
+    lines.push('FAMILY PROJECTS (unscheduled):');
+    fam.forEach(function(p) {
+      var g = groupById(p.group_id);
+      var line = '  [' + (p.priority || 'medium').toUpperCase() + '] ' + p.name + (g ? ' [group: ' + g.name + ']' : '') + ' (' + durationStr(p.weeks, p.days) + ')';
+      if (p.deadline) line += ' deadline:' + p.deadline;
+      if (p.travel === 'yes') line += ' [travel required]';
+      if (p.notes) line += ' - ' + p.notes;
+      lines.push(line);
+    });
+  }
   return lines.join('\n');
 }
 
@@ -2474,6 +3028,7 @@ async function bootApp() {
     loadHolSettings(),
     loadLegend()
   ]);
+  await loadFamilyData();
   loadLegendLabels();
   render();
   initContextMenu();
