@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wall Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;600&display=swap');
+  :root{
+    --bg:#f7f4ef;--grid-bg:#ffffff;--weekend:#ede9e1;
+    --border:#c8c2b8;--border-light:#e0dbd2;
+    --text:#1a1814;--text-muted:#8a847a;
+    --h1:#fde68a;--h2:#bbf7d0;--h3:#bfdbfe;--h4:#fecaca;--h5:#e9d5ff;
+    --ghost-bg:#f0ede8;--ghost-border:#ddd8d0;--ghost-text:#b0a898;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* toolbar */
+  #toolbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);
+    padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  #toolbar h1{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--text-muted);}
+  .year-nav{display:flex;align-items:center;gap:10px;}
+  .year-nav button{background:none;border:1px solid var(--border);border-radius:4px;width:28px;height:28px;
+    cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+    color:var(--text);transition:background .15s;}
+  .year-nav button:hover{background:var(--weekend);}
+  #year-label{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;min-width:60px;text-align:center;}
+  .sep{width:1px;height:24px;background:var(--border-light);flex-shrink:0;}
+  .swatch-row{display:flex;align-items:center;gap:6px;}
+  .sw-lbl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-right:2px;}
+  .swatch{width:22px;height:22px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;}
+  .swatch:hover{transform:scale(1.2);}
+  .swatch.active{border-color:var(--text);transform:scale(1.15);}
+  .swatch[data-color="0"]{background:white;border-color:var(--border);}
+  .swatch[data-color="1"]{background:var(--h1);}
+  .swatch[data-color="2"]{background:var(--h2);}
+  .swatch[data-color="3"]{background:var(--h3);}
+  .swatch[data-color="4"]{background:var(--h4);}
+  .swatch[data-color="5"]{background:var(--h5);}
+  .toggle-group{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+  .toggle-pill{display:flex;background:var(--weekend);border-radius:20px;padding:2px;border:1px solid var(--border-light);gap:1px;}
+  .toggle-pill button{border:none;background:transparent;border-radius:16px;padding:3px 10px;font-size:10px;
+    font-family:'DM Mono',monospace;letter-spacing:.06em;cursor:pointer;color:var(--text-muted);
+    transition:background .15s,color .15s;white-space:nowrap;}
+  .toggle-pill button.active{background:var(--text);color:#fff;}
+  .ghost-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+    font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+  .ghost-toggle input{display:none;}
+  .ghost-track{width:32px;height:18px;border-radius:9px;background:var(--weekend);border:1px solid var(--border);
+    position:relative;transition:background .2s;flex-shrink:0;}
+  .ghost-track::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;
+    border-radius:50%;background:var(--border);transition:transform .2s,background .2s;}
+  .ghost-toggle input:checked + .ghost-track{background:#d6d0c8;}
+  .ghost-toggle input:checked + .ghost-track::after{transform:translateX(14px);background:var(--text);}
+  #ghost-toggle-wrap{display:none;}
+  .btn-ai{background:var(--text);color:white;border:none;border-radius:4px;padding:4px 12px;
+    font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  .btn-ai:hover{opacity:0.85;}
+  .btn-print,.btn-settings,.btn-clear{background:none;border:1px solid var(--border-light);border-radius:4px;
+    padding:4px 10px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-muted);cursor:pointer;}
+  .btn-print:hover,.btn-settings:hover,.btn-clear:hover{color:var(--text);border-color:var(--border);}
+  .btn-clear{margin-left:auto;}
+
+  /* grid */
+  #planner-outer{overflow-x:auto;padding:16px 20px 40px;}
+  #planner{display:grid;gap:0 6px;min-width:1100px;}
+  .month-header{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text);padding:6px 5px 5px;border-bottom:2px solid var(--text);
+    margin-bottom:3px;white-space:nowrap;}
+  .day-cell{min-height:40px;border:1px solid var(--border-light);border-radius:2px;background:var(--grid-bg);
+    position:relative;cursor:pointer;transition:border-color .12s;overflow:hidden;display:flex;
+    flex-direction:column;margin-bottom:2px;user-select:none;}
+  .day-cell:hover{border-color:var(--border);}
+  .day-cell.weekend{background:var(--weekend);}
+  .day-cell.today{border:1.5px solid var(--text)!important;}
+  .day-cell.ghost{background:var(--ghost-bg);border:1px dashed var(--ghost-border);opacity:0.72;}
+  .day-cell.ghost:hover{border-color:var(--border);opacity:0.9;}
+  .day-cell.ghost .day-num{font-style:italic;color:var(--ghost-text);}
+  .day-cell.ghost .day-note{color:var(--ghost-text);}
+  .day-cell.hl-1{background:var(--h1)!important;}
+  .day-cell.hl-2{background:var(--h2)!important;}
+  .day-cell.hl-3{background:var(--h3)!important;}
+  .day-cell.hl-4{background:var(--h4)!important;}
+  .day-cell.hl-5{background:var(--h5)!important;}
+  .day-meta{display:flex;align-items:baseline;gap:3px;padding:3px 5px 1px;pointer-events:none;flex-shrink:0;}
+  .day-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;line-height:1;color:var(--text);}
+  .day-dow{font-family:'DM Mono',monospace;font-size:9px;font-weight:300;color:var(--text-muted);
+    line-height:1;text-transform:uppercase;letter-spacing:.04em;}
+  .day-note{font-size:11px;font-family:'Caveat',cursive;color:var(--text);padding:1px 5px 3px;
+    border:none;background:transparent;resize:none;width:100%;flex:1;line-height:1.3;
+    cursor:text;outline:none;min-height:20px;user-select:text;}
+  .today-dot{position:absolute;top:4px;left:4px;width:5px;height:5px;border-radius:50%;
+    background:var(--text);pointer-events:none;}
+  .ind-icon{position:absolute;top:3px;left:4px;font-size:11px;line-height:1;pointer-events:none;}
+  .ind-tray{position:absolute;top:2px;right:3px;display:flex;gap:2px;align-items:center;pointer-events:none;}
+  .ind-star{font-size:9px;color:#c0922a;line-height:1;}
+  .ind-recur{font-size:9px;color:var(--text-muted);opacity:0.7;line-height:1;}
+  .hol-note{font-size:8px;font-family:'DM Sans',sans-serif;font-style:italic;color:var(--text-muted);
+    padding:0 5px 2px;line-height:1.3;pointer-events:none;}
+
+  /* week number label inside Monday cells */
+  .week-num{font-family:'DM Mono',monospace;font-size:8px;font-weight:400;
+    color:var(--text-muted);letter-spacing:.04em;padding:0 5px 2px;
+    pointer-events:none;line-height:1.2;opacity:0.8;}
+
+  /* mini overview popup */
+  #mini-overview{position:fixed;z-index:9999;background:var(--bg);
+    border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:12px;
+    display:none;pointer-events:auto;}
+  #mini-overview canvas{display:block;border-radius:4px;}
+  #mini-overview .mini-label{font-family:'DM Mono',monospace;font-size:9px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);
+    margin-bottom:8px;text-align:center;}
+  #toolbar h1{cursor:pointer;transition:color .15s;}
+  #toolbar h1:hover{color:var(--text);}
+
+  /* legend */
+  #legend{display:flex;gap:0;align-items:center;padding:10px 20px;
+    border-top:1px solid var(--border-light);background:var(--bg);flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:.07em;padding:4px 16px 4px 0;
+    border-right:1px solid var(--border-light);margin-right:16px;}
+  .legend-item:last-of-type{border-right:none;}
+  .legend-swatch{width:16px;height:16px;border-radius:2px;border:1px solid var(--border-light);flex-shrink:0;}
+  .legend-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);
+    letter-spacing:.06em;text-transform:uppercase;border:none;background:transparent;
+    outline:none;width:auto;min-width:2em;max-width:180px;cursor:text;
+    border-bottom:1px dashed transparent;transition:border-color .15s,color .15s;padding:1px 2px;}
+  .legend-label:hover{border-bottom-color:var(--border);}
+  .legend-label:focus{border-bottom-color:var(--text);color:var(--text);}
+  #hint{margin-left:auto;font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;
+    padding-left:16px;}
+
+  /* context menu */
+  #ctx-menu{position:fixed;z-index:1000;background:var(--bg);border:1px solid var(--border);
+    border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);padding:4px 0;min-width:170px;display:none;}
+  #ctx-menu.visible{display:block;}
+  .ctx-item{padding:7px 14px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text);cursor:pointer;white-space:nowrap;}
+  .ctx-item:hover{background:var(--weekend);}
+  .ctx-item.danger{color:#c0392b;}
+  .ctx-sep{height:1px;background:var(--border-light);margin:3px 0;}
+
+  /* recurrence popover */
+  #recur-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:14px 16px;width:240px;display:none;}
+  #recur-pop.visible{display:block;}
+  #recur-pop h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:10px;}
+  #recur-pop label{display:block;font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;margin-top:10px;}
+  #recur-note{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:5px 7px;
+    font-size:11px;font-family:'DM Sans',sans-serif;background:white;color:var(--text);outline:none;resize:none;}
+  .recur-swatches{display:flex;gap:5px;margin-top:4px;}
+  .recur-swatch{width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;}
+  .recur-swatch:hover{transform:scale(1.15);}
+  .recur-swatch.active{border-color:var(--text);}
+  .recur-swatch[data-rc="0"]{background:white;border-color:var(--border);}
+  .recur-swatch[data-rc="1"]{background:var(--h1);}
+  .recur-swatch[data-rc="2"]{background:var(--h2);}
+  .recur-swatch[data-rc="3"]{background:var(--h3);}
+  .recur-swatch[data-rc="4"]{background:var(--h4);}
+  .recur-swatch[data-rc="5"]{background:var(--h5);}
+  .recur-btns{display:flex;gap:6px;margin-top:12px;}
+  .recur-btns button{flex:1;padding:5px 0;font-size:10px;font-family:'DM Mono',monospace;
+    letter-spacing:.08em;text-transform:uppercase;border-radius:4px;cursor:pointer;border:1px solid var(--border);}
+  #recur-save{background:var(--text);color:white;border-color:var(--text);}
+  #recur-cancel{background:transparent;color:var(--text-muted);}
+
+  /* icon picker */
+  #icon-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:12px;width:200px;display:none;}
+  #icon-pop.visible{display:block;}
+  #icon-pop h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:10px;}
+  .icon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+  .icon-opt{font-size:18px;text-align:center;padding:6px 4px;border-radius:4px;cursor:pointer;
+    border:1.5px solid transparent;transition:background .1s,border-color .1s;}
+  .icon-opt:hover{background:var(--weekend);}
+  .icon-opt.active{border-color:var(--text);background:var(--weekend);}
+  .icon-opt.none-opt{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);
+    display:flex;align-items:center;justify-content:center;}
+
+  /* print size picker */
+  #print-size-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:14px 16px;width:180px;display:none;}
+  #print-size-pop.visible{display:block;}
+  #print-size-pop h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:10px;}
+  .print-opt{display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;
+    font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text);cursor:pointer;border-radius:4px;}
+  .print-opt:hover{background:var(--weekend);}
+
+  /* settings drawer */
+  #settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:200;
+    display:none;backdrop-filter:blur(1px);}
+  #settings-overlay.visible{display:block;}
+  #settings-drawer{position:fixed;top:0;right:0;bottom:0;width:320px;max-width:95vw;
+    background:var(--bg);border-left:1px solid var(--border);z-index:201;
+    display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;}
+  #settings-drawer.visible{transform:translateX(0);}
+  .drawer-header{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--border-light);}
+  .drawer-header h2{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--text);}
+  .drawer-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:2px 6px;border-radius:4px;}
+  .drawer-close:hover{color:var(--text);background:var(--weekend);}
+  .drawer-body{flex:1;overflow-y:auto;padding:18px;}
+  .setting-section{margin-bottom:20px;}
+  .setting-section h3{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);
+    margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-light);}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
+  .setting-label{font-size:12px;color:var(--text);}
+  .s-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
+  .s-toggle input{display:none;}
+  .s-track{width:32px;height:18px;border-radius:9px;background:var(--weekend);border:1px solid var(--border);
+    position:relative;transition:background .2s;flex-shrink:0;}
+  .s-track::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;
+    border-radius:50%;background:var(--border);transition:transform .2s,background .2s;}
+  .s-toggle input:checked + .s-track{background:#d6d0c8;}
+  .s-toggle input:checked + .s-track::after{transform:translateX(14px);background:var(--text);}
+  .country-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  .country-row{display:flex;align-items:center;gap:8px;padding:5px 8px;background:white;
+    border:1px solid var(--border-light);border-radius:4px;}
+  .country-flag{font-size:16px;line-height:1;}
+  .country-name{font-size:11px;color:var(--text);flex:1;}
+  .country-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;}
+  .country-remove:hover{color:#c0392b;}
+  .country-add-row{display:flex;gap:6px;margin-top:8px;}
+  #country-select{flex:1;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-light);
+    border-radius:4px;padding:5px 7px;background:white;color:var(--text);outline:none;}
+  .btn-add-country{background:var(--text);color:white;border:none;border-radius:4px;padding:5px 12px;
+    font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  #about-me{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:7px 9px;
+    font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text);background:white;
+    outline:none;resize:vertical;line-height:1.5;}
+  #save-about{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--text);color:white;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;margin-top:6px;float:right;}
+
+  /* AI modal */
+  #ai-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;
+    display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  #ai-overlay.visible{display:flex;}
+  #ai-modal{background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 12px 48px rgba(0,0,0,0.2);width:min(680px,95vw);max-height:85vh;
+    display:flex;flex-direction:column;overflow:hidden;}
+  .ai-modal-header{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--border-light);flex-shrink:0;}
+  .ai-modal-header h2{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--text);}
+  .ai-modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:2px 6px;border-radius:4px;}
+  .ai-modal-close:hover{color:var(--text);background:var(--weekend);}
+  .ai-tabs{display:flex;border-bottom:1px solid var(--border-light);flex-shrink:0;}
+  .ai-tab{flex:1;padding:10px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;background:none;border:none;cursor:pointer;color:var(--text-muted);
+    border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}
+  .ai-tab.active{color:var(--text);border-bottom-color:var(--text);}
+  .ai-panel{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0;}
+  .ai-panel.active{display:flex;}
+  #snap-body{flex:1;overflow-y:auto;padding:20px;font-size:13px;line-height:1.7;color:var(--text);}
+  #snap-body p{margin-bottom:12px;}
+  #snap-body.empty{display:flex;align-items:center;justify-content:center;
+    color:var(--text-muted);font-style:italic;font-size:12px;}
+  #snap-btn{margin:0 20px 16px;padding:10px;font-size:11px;font-family:'DM Mono',monospace;
+    letter-spacing:.1em;text-transform:uppercase;background:var(--text);color:white;
+    border:none;border-radius:6px;cursor:pointer;flex-shrink:0;}
+  #snap-btn:hover{opacity:0.85;}
+  #snap-btn:disabled{opacity:0.45;cursor:default;}
+  #chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;}
+  .chat-msg{max-width:88%;padding:10px 13px;border-radius:8px;font-size:13px;line-height:1.6;}
+  .chat-msg.user{background:var(--text);color:white;align-self:flex-end;border-radius:8px 8px 2px 8px;}
+  .chat-msg.assistant{background:white;border:1px solid var(--border-light);align-self:flex-start;border-radius:8px 8px 8px 2px;}
+  .chat-msg.thinking{color:var(--text-muted);font-style:italic;}
+  .chat-presets{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;flex-shrink:0;}
+  .preset-btn{font-size:10px;color:var(--text-muted);background:white;border:1px solid var(--border-light);
+    border-radius:20px;padding:4px 10px;cursor:pointer;transition:background .1s,border-color .1s,color .1s;}
+  .preset-btn:hover{background:var(--weekend);border-color:var(--border);color:var(--text);}
+  .chat-input-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border-light);flex-shrink:0;}
+  #chat-input{flex:1;border:1px solid var(--border-light);border-radius:6px;padding:8px 10px;
+    font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:white;outline:none;resize:none;}
+  #chat-input:focus{border-color:var(--border);}
+  #chat-send{background:var(--text);color:white;border:none;border-radius:6px;padding:8px 14px;
+    font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  #chat-send:hover{opacity:0.85;}
+  #chat-send:disabled{opacity:0.4;cursor:default;}
+
+  /* page nav tabs */
+  #page-nav{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg);
+    padding:0 20px;flex-shrink:0;}
+  .page-tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px;
+    font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-muted);cursor:pointer;transition:color .15s,border-color .15s;}
+  .page-tab.active{color:var(--text);border-bottom-color:var(--text);}
+  .page-tab:hover:not(.active){color:var(--text);}
+
+  /* toolbar context sections */
+  .tb-chart{} /* always flex, hidden on projects */
+  .tb-projects{display:none;}
+  body.page-projects .tb-chart{display:none!important;}
+  body.page-projects .tb-projects{display:flex!important;align-items:center;gap:14px;}
+  body.page-projects #year-label-wrap{display:none!important;}
+  body.page-projects #ghost-toggle-wrap{display:none!important;}
+  body.page-projects #ghost-sep{display:none!important;}
+
+  /* projects page */
+  #projects-page{display:none;padding:20px;flex:1;overflow-y:auto;}
+  body.page-projects #projects-page{display:block;}
+  body.page-projects #planner-outer{display:none;}
+  body.page-projects #legend{display:none;}
+  body.page-projects #print-header{display:none!important;}
+
+  /* projects toolbar btn */
+  .btn-add-project{background:var(--text);color:white;border:none;border-radius:4px;
+    padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;cursor:pointer;}
+  .btn-add-project:hover{opacity:0.85;}
+
+  /* filter row */
+  .proj-filter-row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .proj-filter-row select,.proj-filter-row input{font-size:11px;font-family:'DM Sans',sans-serif;
+    border:1px solid var(--border-light);border-radius:4px;padding:5px 8px;background:white;
+    color:var(--text);outline:none;}
+  .proj-filter-row select:focus,.proj-filter-row input:focus{border-color:var(--border);}
+  .proj-filter-label{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;
+    text-transform:uppercase;letter-spacing:.08em;}
+
+  /* projects table */
+  .proj-table-wrap{overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;}
+  .proj-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .proj-table th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--text-muted);padding:10px 12px;text-align:left;
+    background:var(--weekend);border-bottom:1px solid var(--border-light);
+    cursor:pointer;user-select:none;white-space:nowrap;}
+  .proj-table th:hover{color:var(--text);}
+  .proj-table th .sort-arrow{margin-left:4px;opacity:0.4;}
+  .proj-table th.sorted .sort-arrow{opacity:1;}
+  .proj-table td{padding:10px 12px;border-bottom:1px solid var(--border-light);
+    vertical-align:middle;color:var(--text);}
+  .proj-table tr:last-child td{border-bottom:none;}
+  .proj-table tr:hover td{background:rgba(0,0,0,0.02);}
+  .proj-empty{text-align:center;padding:40px;color:var(--text-muted);font-style:italic;font-size:13px;}
+
+  /* priority badges */
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;
+    font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;font-weight:500;}
+  .badge-urgent{background:#fecaca;color:#991b1b;}
+  .badge-high{background:#fde68a;color:#92400e;}
+  .badge-medium{background:#bbf7d0;color:#065f46;}
+  .badge-low{background:#e0dbd2;color:#5a544c;}
+
+  /* shared badges */
+  .badge-shared-out{background:#bfdbfe;color:#1e40af;}
+  .badge-shared-in{background:#e9d5ff;color:#6b21a8;}
+
+  /* row action buttons */
+  .proj-actions{display:flex;gap:6px;align-items:center;}
+  .btn-proj-action{background:none;border:1px solid var(--border-light);border-radius:4px;
+    padding:3px 8px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted);cursor:pointer;white-space:nowrap;}
+  .btn-proj-action:hover{border-color:var(--border);color:var(--text);}
+  .btn-proj-action.find-time{background:var(--text);color:white;border-color:var(--text);}
+  .btn-proj-action.find-time:hover{opacity:0.85;}
+  .btn-proj-action.danger:hover{border-color:#c0392b;color:#c0392b;}
+
+  /* project status */
+  .proj-scheduled{opacity:0.5;text-decoration:line-through;}
+
+  /* project form modal */
+  #proj-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;
+    display:none;align-items:flex-start;justify-content:center;padding-top:40px;backdrop-filter:blur(2px);}
+  #proj-modal-overlay.visible{display:flex;}
+  #proj-modal{background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 12px 48px rgba(0,0,0,0.2);width:min(560px,95vw);max-height:85vh;
+    display:flex;flex-direction:column;overflow:hidden;}
+  .proj-modal-header{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--border-light);flex-shrink:0;}
+  .proj-modal-header h2{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--text);}
+  .proj-modal-close{background:none;border:none;font-size:18px;cursor:pointer;
+    color:var(--text-muted);padding:2px 6px;border-radius:4px;}
+  .proj-modal-close:hover{color:var(--text);background:var(--weekend);}
+  .proj-modal-body{flex:1;overflow-y:auto;padding:18px 20px;}
+  .proj-modal-footer{padding:14px 20px;border-top:1px solid var(--border-light);
+    display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block;font-size:10px;font-family:'DM Mono',monospace;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:5px;}
+  .form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border-light);
+    border-radius:4px;padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;
+    color:var(--text);background:white;outline:none;}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--border);}
+  .form-group textarea{resize:vertical;line-height:1.5;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .duration-row{display:flex;gap:8px;align-items:center;}
+  .duration-row input{width:60px;flex-shrink:0;}
+  .duration-row span{font-size:12px;color:var(--text-muted);}
+  .btn-primary{background:var(--text);color:white;border:none;border-radius:4px;
+    padding:8px 18px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;cursor:pointer;}
+  .btn-primary:hover{opacity:0.85;}
+  .btn-secondary{background:transparent;color:var(--text-muted);border:1px solid var(--border);
+    border-radius:4px;padding:8px 18px;font-size:11px;font-family:'DM Mono',monospace;
+    letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  .btn-secondary:hover{color:var(--text);border-color:var(--text);}
+
+  /* print */
+  #print-header{display:none;text-align:center;padding:4mm 0 5mm;font-family:'DM Mono',monospace;font-size:14pt;font-weight:500;letter-spacing:.1em;}
+  @media print{
+    @page{size:landscape;margin:6mm;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    html,body{width:100%;height:100%;margin:0;padding:0;}
+    #page-nav,#toolbar,#legend,#settings-overlay,#settings-drawer,
+    #ctx-menu,#recur-pop,#icon-pop,#print-size-pop,#ai-overlay,
+    #projects-page{display:none!important;}
+    body{background:white;}
+    #print-header{display:block!important;}
+    #planner-outer{
+      padding:0;overflow:visible;
+      width:100%;
+    }
+    #planner{
+      min-width:0!important;
+      width:100%;
+      gap:0 2px;
+    }
+    .day-cell{min-height:0;margin-bottom:1px;overflow:hidden;}
+    .day-note{min-height:0;font-size:9px;font-family:'Caveat',cursive;}
+    .day-num{font-size:9px;}
+    .day-dow{font-size:7px;}
+    .week-num{font-size:7px;}
+    .hol-note{font-size:6px;}
+    .month-header{font-size:9px;padding:4px 3px 3px;}
+  }
+</style>
+</head>
+<body>
+<div id="page-nav">
+  <button class="page-tab active" data-page="chart">Wall Chart</button>
+  <button class="page-tab" data-page="projects">Projects</button>
+</div>
+<div id="toolbar">
+  <h1>Wall Planner</h1>
+  <div id="year-label-wrap" class="tb-chart" style="display:flex;align-items:center;">
+    <div class="year-nav">
+      <button id="prev-year">&#8249;</button>
+      <span id="year-label">2026</span>
+      <button id="next-year">&#8250;</button>
+    </div>
+  </div>
+  <div class="sep tb-chart"></div>
+  <div class="swatch-row tb-chart">
+    <span class="sw-lbl">Colour</span>
+    <div class="swatch active" data-color="0"></div>
+    <div class="swatch" data-color="1"></div>
+    <div class="swatch" data-color="2"></div>
+    <div class="swatch" data-color="3"></div>
+    <div class="swatch" data-color="4"></div>
+    <div class="swatch" data-color="5"></div>
+  </div>
+  <div class="sep tb-chart"></div>
+  <div class="toggle-group tb-chart">
+    <span>Align</span>
+    <div class="toggle-pill">
+      <button id="mode-aligned" class="active">Weekends</button>
+      <button id="mode-top">Month start</button>
+    </div>
+  </div>
+  <div class="sep" id="ghost-sep" style="display:none;"></div>
+  <label class="ghost-toggle" id="ghost-toggle-wrap" style="display:none;">
+    <input type="checkbox" id="ghost-chk">
+    <span class="ghost-track"></span>
+    Ghost cells
+  </label>
+  <div class="tb-projects" style="display:none;">
+    <button class="btn-add-project" id="btn-add-project">+ Add Project</button>
+  </div>
+  <button class="btn-ai" id="btn-ai">&#10022; Ask Claude</button>
+  <button class="btn-print tb-chart" id="btn-print">&#9113; Print / PDF</button>
+  <button class="btn-settings" id="btn-settings">&#9881; Settings</button>
+  <button class="btn-clear" id="btn-clear-all">Clear all</button>
+</div>
+<div id="print-header">WALL PLANNER <span id="print-year"></span></div>
+<div id="planner-outer"><div id="planner"></div></div>
+<div id="legend">
+  <div class="legend-item" style="cursor:default;"><div class="legend-swatch" style="background:var(--weekend)"></div>Weekend</div>
+  <div class="legend-item" style="cursor:default;"><div class="legend-swatch" style="border:1.5px solid #1a1814;background:white"></div>Today</div>
+  <div class="legend-item" id="legend-1"><div class="legend-swatch" style="background:var(--h1)"></div><input class="legend-label" data-color="1" value="Amber"></div>
+  <div class="legend-item" id="legend-2"><div class="legend-swatch" style="background:var(--h2)"></div><input class="legend-label" data-color="2" value="Sage"></div>
+  <div class="legend-item" id="legend-3"><div class="legend-swatch" style="background:var(--h3)"></div><input class="legend-label" data-color="3" value="Sky"></div>
+  <div class="legend-item" id="legend-4"><div class="legend-swatch" style="background:var(--h4)"></div><input class="legend-label" data-color="4" value="Rose"></div>
+  <div class="legend-item" id="legend-5"><div class="legend-swatch" style="background:var(--h5)"></div><input class="legend-label" data-color="5" value="Lavender"></div>
+  <div class="legend-item" id="ghost-legend" style="display:none;cursor:default;">
+    <div class="legend-swatch" style="background:var(--ghost-bg);border:1px dashed var(--ghost-border)"></div>Ghost
+  </div>
+  <div class="legend-item" style="cursor:default;"><span style="color:#c0922a;font-size:12px;">&#9733;</span>&nbsp;Important</div>
+  <div class="legend-item" style="cursor:default;">&#8635; Recurring</div>
+  <span id="hint">Click to colour &middot; Drag range &middot; Right-click/long-press for options</span>
+</div>
+
+<div id="projects-page">
+  <div class="proj-filter-row">
+    <span class="proj-filter-label">Filter:</span>
+    <select id="proj-filter-priority">
+      <option value="">All priorities</option>
+      <option value="urgent">Urgent</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <select id="proj-filter-status">
+      <option value="active">Active</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="all">All</option>
+    </select>
+    <select id="proj-filter-travel">
+      <option value="">Any travel</option>
+      <option value="yes">Travel required</option>
+      <option value="no">No travel</option>
+    </select>
+    <input id="proj-search" type="text" placeholder="Search projects..." style="width:180px;">
+  </div>
+  <div class="proj-table-wrap">
+    <table class="proj-table" id="proj-table">
+      <thead>
+        <tr>
+          <th data-col="name">Project <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="duration">Duration <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="priority">Priority <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="travel">Travel <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="owner">Owner <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="deadline">Deadline <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="shared">Shared <span class="sort-arrow">&#8597;</span></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- project form modal -->
+<div id="proj-modal-overlay">
+  <div id="proj-modal">
+    <div class="proj-modal-header">
+      <h2 id="proj-modal-title">New Project</h2>
+      <button class="proj-modal-close" id="proj-modal-close">&#10005;</button>
+    </div>
+    <div class="proj-modal-body">
+      <div class="form-group">
+        <label>Project name *</label>
+        <input type="text" id="pf-name" placeholder="e.g. Bathroom renovation">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="pf-desc" rows="2" placeholder="Brief description (optional)"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Duration</label>
+          <div class="duration-row">
+            <input type="number" id="pf-weeks" min="0" max="52" value="0" placeholder="0">
+            <span>wks</span>
+            <input type="number" id="pf-days" min="0" max="6" value="1" placeholder="1">
+            <span>days</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="pf-priority">
+            <option value="medium">Medium</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Deadline</label>
+          <input type="date" id="pf-deadline">
+        </div>
+        <div class="form-group">
+          <label>Travel required?</label>
+          <select id="pf-travel">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Project owner</label>
+          <input type="text" id="pf-owner" placeholder="Your name (or someone else's)">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="pf-status">
+            <option value="active">Active</option>
+            <option value="scheduled">Scheduled (on wall chart)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Shared with (names, comma-separated)</label>
+        <input type="text" id="pf-shared" placeholder="e.g. Gill, Katie">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="pf-notes" rows="3" placeholder="Any additional notes..."></textarea>
+      </div>
+    </div>
+    <div class="proj-modal-footer">
+      <button class="btn-secondary" id="proj-modal-cancel">Cancel</button>
+      <button class="btn-primary" id="proj-modal-save">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-star-add">&#9733; Mark as important</div>
+  <div class="ctx-item" id="ctx-star-remove">&#9733; Remove importance</div>
+  <div class="ctx-item" id="ctx-icon-set">Set icon</div>
+  <div class="ctx-item danger" id="ctx-icon-remove">Remove icon</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-add">&#8635; Add recurrence</div>
+  <div class="ctx-item" id="ctx-edit">&#8635; Edit recurrence</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" id="ctx-remove">Remove recurrence</div>
+</div>
+
+<div id="recur-pop">
+  <h3 id="recur-pop-title">Recurring entry</h3>
+  <label>Note (optional)</label>
+  <textarea id="recur-note" rows="2" placeholder="e.g. Matt's birthday"></textarea>
+  <label>Colour (optional)</label>
+  <div class="recur-swatches">
+    <div class="recur-swatch active" data-rc="0"></div>
+    <div class="recur-swatch" data-rc="1"></div>
+    <div class="recur-swatch" data-rc="2"></div>
+    <div class="recur-swatch" data-rc="3"></div>
+    <div class="recur-swatch" data-rc="4"></div>
+    <div class="recur-swatch" data-rc="5"></div>
+  </div>
+  <div class="recur-btns">
+    <button id="recur-save">Save</button>
+    <button id="recur-cancel">Cancel</button>
+  </div>
+</div>
+
+<div id="icon-pop">
+  <h3>Set icon</h3>
+  <div class="icon-grid" id="icon-grid"></div>
+</div>
+
+<div id="print-size-pop">
+  <h3>Print size</h3>
+  <button class="print-opt" data-size="a3">A3 Landscape</button>
+  <button class="print-opt" data-size="a4">A4 Landscape</button>
+</div>
+
+<div id="settings-overlay"></div>
+<div id="settings-drawer">
+  <div class="drawer-header">
+    <h2>Settings</h2>
+    <button class="drawer-close" id="drawer-close">&#10005;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="setting-section">
+      <h3>About Me</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Personal context for the AI advisor.</p>
+      <textarea id="about-me" rows="5" placeholder="e.g. I'm Matt, Dubai-based triathlete, two kids, planning IRONMAN October."></textarea>
+      <button id="save-about">Save</button>
+    </div>
+    <div class="setting-section">
+      <h3>Public Holidays</h3>
+      <div class="setting-row">
+        <span class="setting-label">Show public holidays</span>
+        <label class="s-toggle"><input type="checkbox" id="hol-enabled"><span class="s-track"></span></label>
+      </div>
+      <div id="hol-countries-wrap" style="display:none;">
+        <div class="country-list" id="country-list"></div>
+        <div class="country-add-row">
+          <select id="country-select"><option value="">Add a country...</option></select>
+          <button class="btn-add-country" id="btn-add-country">Add</button>
+        </div>
+        <div id="hol-status" style="font-size:10px;color:var(--text-muted);margin-top:8px;font-style:italic;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ai-overlay">
+  <div id="ai-modal">
+    <div class="ai-modal-header">
+      <h2>&#10022; Life Planning Advisor</h2>
+      <button class="ai-modal-close" id="ai-modal-close">&#10005;</button>
+    </div>
+    <div class="ai-tabs">
+      <button class="ai-tab active" data-tab="snapshot">Snapshot</button>
+      <button class="ai-tab" data-tab="chat">Conversation</button>
+    </div>
+    <div class="ai-panel active" id="panel-snapshot">
+      <div id="snap-body" class="empty">Click below for your planning snapshot.</div>
+      <button id="snap-btn">Generate snapshot</button>
+    </div>
+    <div class="ai-panel" id="panel-chat">
+      <div id="chat-messages"></div>
+      <div class="chat-presets" id="chat-presets"></div>
+      <div class="chat-input-row">
+        <textarea id="chat-input" rows="2" placeholder="Ask anything about your calendar..."></textarea>
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mini-overview">
+  <div class="mini-label">Year at a glance</div>
+  <canvas id="mini-canvas"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DOW_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// Supabase config — fill these in
+var SUPABASE_URL = 'https://ajxscekylxzmabbffvnx.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqeHNjZWt5bHh6bWFiYmZmdm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MzA5NDIsImV4cCI6MjA5NzEwNjk0Mn0.fyuQth_g43AotK2H5GDJS_ywPxrYRYZcV8uDgRL4f5w';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var currentUser = null;
+
+// Store keys (used as planner_data.store_key)
+var STORAGE_KEY = 'wall-planner-v4';
+var RECUR_KEY = 'wall-planner-recur-v1';
+var ICON_KEY = 'wall-planner-icons-v1';
+var HOL_STORAGE = 'wall-planner-hol-v1';
+var LEGEND_KEY = 'wall-planner-legend';
+var ABOUT_KEY = 'wall-planner-about-v1';
+
+var ICONS = [
+  {id:'plane', emoji:'\u2708\uFE0F', label:'Travel'},
+  {id:'cake', emoji:'\uD83C\uDF82', label:'Birthday'},
+  {id:'medical', emoji:'\uD83C\uDFE5', label:'Medical'},
+  {id:'exam', emoji:'\uD83C\uDF93', label:'Education'},
+  {id:'work', emoji:'\uD83D\uDCBC', label:'Work'},
+  {id:'beach', emoji:'\uD83C\uDFD6\uFE0F', label:'Holiday'},
+  {id:'sport', emoji:'\uD83C\uDFC3', label:'Sport'},
+  {id:'party', emoji:'\uD83C\uDF89', label:'Celebration'},
+  {id:'money', emoji:'\uD83D\uDCB0', label:'Financial'},
+  {id:'admin', emoji:'\uD83D\uDD11', label:'Admin'},
+  {id:'family', emoji:'\u2764\uFE0F', label:'Family'},
+  {id:'moon', emoji:'\uD83C\uDF19', label:'Cultural'},
+];
+
+var COUNTRIES = [
+  {code:'AE',name:'UAE',flag:'\uD83C\uDDE6\uD83C\uDDEA'},
+  {code:'AU',name:'Australia',flag:'\uD83C\uDDE6\uD83C\uDDFA'},
+  {code:'CA',name:'Canada',flag:'\uD83C\uDDE8\uD83C\uDDE6'},
+  {code:'CN',name:'China',flag:'\uD83C\uDDE8\uD83C\uDDF3'},
+  {code:'EG',name:'Egypt',flag:'\uD83C\uDDEA\uD83C\uDDEC'},
+  {code:'FR',name:'France',flag:'\uD83C\uDDEB\uD83C\uDDF7'},
+  {code:'DE',name:'Germany',flag:'\uD83C\uDDE9\uD83C\uDDEA'},
+  {code:'IN',name:'India',flag:'\uD83C\uDDEE\uD83C\uDDF3'},
+  {code:'ID',name:'Indonesia',flag:'\uD83C\uDDEE\uD83C\uDDE9'},
+  {code:'IE',name:'Ireland',flag:'\uD83C\uDDEE\uD83C\uDDEA'},
+  {code:'IL',name:'Israel',flag:'\uD83C\uDDEE\uD83C\uDDF1'},
+  {code:'IT',name:'Italy',flag:'\uD83C\uDDEE\uD83C\uDDF9'},
+  {code:'JP',name:'Japan',flag:'\uD83C\uDDEF\uD83C\uDDF5'},
+  {code:'MY',name:'Malaysia',flag:'\uD83C\uDDF2\uD83C\uDDFE'},
+  {code:'MX',name:'Mexico',flag:'\uD83C\uDDF2\uD83C\uDDFD'},
+  {code:'NL',name:'Netherlands',flag:'\uD83C\uDDF3\uD83C\uDDF1'},
+  {code:'NZ',name:'New Zealand',flag:'\uD83C\uDDF3\uD83C\uDDFF'},
+  {code:'NG',name:'Nigeria',flag:'\uD83C\uDDF3\uD83C\uDDEC'},
+  {code:'NO',name:'Norway',flag:'\uD83C\uDDF3\uD83C\uDDF4'},
+  {code:'PK',name:'Pakistan',flag:'\uD83C\uDDF5\uD83C\uDDF0'},
+  {code:'PH',name:'Philippines',flag:'\uD83C\uDDF5\uD83C\uDDED'},
+  {code:'PL',name:'Poland',flag:'\uD83C\uDDF5\uD83C\uDDF1'},
+  {code:'PT',name:'Portugal',flag:'\uD83C\uDDF5\uD83C\uDDF9'},
+  {code:'QA',name:'Qatar',flag:'\uD83C\uDDF6\uD83C\uDDE6'},
+  {code:'SA',name:'Saudi Arabia',flag:'\uD83C\uDDF8\uD83C\uDDE6'},
+  {code:'SG',name:'Singapore',flag:'\uD83C\uDDF8\uD83C\uDDEC'},
+  {code:'ZA',name:'South Africa',flag:'\uD83C\uDDFF\uD83C\uDDE6'},
+  {code:'KR',name:'South Korea',flag:'\uD83C\uDDF0\uD83C\uDDF7'},
+  {code:'ES',name:'Spain',flag:'\uD83C\uDDEA\uD83C\uDDF8'},
+  {code:'SE',name:'Sweden',flag:'\uD83C\uDDF8\uD83C\uDDEA'},
+  {code:'CH',name:'Switzerland',flag:'\uD83C\uDDE8\uD83C\uDDED'},
+  {code:'TR',name:'Turkey',flag:'\uD83C\uDDF9\uD83C\uDDF7'},
+  {code:'GB',name:'United Kingdom',flag:'\uD83C\uDDEC\uD83C\uDDE7'},
+  {code:'US',name:'United States',flag:'\uD83C\uDDFA\uD83C\uDDF8'},
+];
+
+var LUNAR_COUNTRIES = {AE:1,EG:1,ID:1,IL:1,IN:1,MY:1,NG:1,PK:1,QA:1,SA:1,TR:1};
+
+var PRESETS = [
+  "How are the next few months looking?",
+  "When's a good window for a holiday or break?",
+  "What important dates are coming up soon?",
+  "What does the rest of this year look like?",
+  "Am I balancing busy periods with downtime?",
+  "Anything I might have missed or should be thinking about?",
+  "When could we fit in a family holiday that works for everyone?",
+  "Are there school holidays or public holidays coming up to plan around?",
+  "What are the quietest periods in the next 6 months?",
+  "Are there any scheduling conflicts I should know about?",
+  "I have several projects - help me sequence them given deadlines and busy periods."
+];
+
+// State
+var year = 2026;
+var activeColor = 0;
+var alignMode = 'aligned';
+var showGhost = false;
+var data = {};
+var recur = {};
+var iconData = {};
+var holSettings = {enabled:false, countries:[]};
+var holCache = {};
+var aboutMe = '';
+var legendLabels = {};
+var isDragging = false;
+var dragColor = null;
+var cellMap = {};
+
+// Storage helpers (Supabase planner_data table, keyed by store_key per user)
+async function dbLoad(storeKey, fallback) {
+  try {
+    var res = await sb.from('planner_data').select('value').eq('store_key', storeKey).maybeSingle();
+    if (res.error || !res.data) return fallback;
+    return res.data.value;
+  } catch(e) { return fallback; }
+}
+function dbSave(storeKey, value) {
+  if (!currentUser) return;
+  sb.from('planner_data').upsert(
+    { user_id: currentUser.id, store_key: storeKey, value: value, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,store_key' }
+  ).then(function(res) { if (res.error) console.error('save failed', storeKey, res.error); });
+}
+
+// Holiday cache (shared across users, holiday_cache table)
+async function holCacheGet(cacheKey) {
+  try {
+    var res = await sb.from('holiday_cache').select('value').eq('cache_key', cacheKey).maybeSingle();
+    if (res.error || !res.data) return null;
+    return res.data.value;
+  } catch(e) { return null; }
+}
+function holCacheSet(cacheKey, value) {
+  sb.from('holiday_cache').upsert(
+    { cache_key: cacheKey, value: value, fetched_at: new Date().toISOString() },
+    { onConflict: 'cache_key' }
+  ).then(function(res) { if (res.error) console.error('hol cache save failed', cacheKey, res.error); });
+}
+
+async function loadData() { data = (await dbLoad(STORAGE_KEY, {})) || {}; }
+function saveData() { dbSave(STORAGE_KEY, data); }
+async function loadRecur() { recur = (await dbLoad(RECUR_KEY, {})) || {}; }
+function saveRecur() { dbSave(RECUR_KEY, recur); }
+async function loadIconData() { iconData = (await dbLoad(ICON_KEY, {})) || {}; }
+function saveIconData() { dbSave(ICON_KEY, iconData); }
+async function loadHolSettings() { holSettings = (await dbLoad(HOL_STORAGE, {enabled:false,countries:[]})) || {enabled:false,countries:[]}; }
+function saveHolSettings() { dbSave(HOL_STORAGE, holSettings); }
+async function loadAboutMe() { aboutMe = (await dbLoad(ABOUT_KEY, '')) || ''; }
+function saveAboutMe() { dbSave(ABOUT_KEY, aboutMe); }
+async function loadLegend() { legendLabels = (await dbLoad(LEGEND_KEY, {})) || {}; }
+function saveLegend() { dbSave(LEGEND_KEY, legendLabels); }
+
+// Key helpers
+function dayKey(y, m, d) {
+  return y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+function recurKey(m, d) {
+  return String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+function dowMon(y, m, d) { return (new Date(y, m, d).getDay() + 6) % 7; }
+function isWeekend(dow) { return dow >= 5; }
+function isToday(y, m, d) {
+  var t = new Date();
+  return t.getFullYear() === y && t.getMonth() === m && t.getDate() === d;
+}
+
+function effectiveEntry(y, m, d) {
+  var oneOff = data[dayKey(y, m, d)] || {};
+  var rec = recur[recurKey(m, d)] || {};
+  var hasOneOff = oneOff.note || oneOff.color;
+  return {
+    note: oneOff.note || (hasOneOff ? '' : rec.note) || '',
+    color: oneOff.color || (hasOneOff ? 0 : rec.color) || 0,
+    isRecurring: !hasOneOff && !!(rec.note || rec.color),
+  };
+}
+
+function isoWeekNum(y, m, d) {
+  // ISO 8601: Week 1 = week containing first Thursday of year
+  var date = new Date(y, m, d);
+  var day = date.getDay() || 7; // Mon=1..Sun=7
+  date.setDate(date.getDate() + 4 - day); // shift to Thursday of this week
+  var yearStart = new Date(date.getFullYear(), 0, 1);
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function getIcon(key) {
+  var id = iconData[key];
+  if (!id) return null;
+  for (var i = 0; i < ICONS.length; i++) { if (ICONS[i].id === id) return ICONS[i]; }
+  return null;
+}
+
+function getHolidaysForDate(dateStr) {
+  if (!holSettings.enabled || !holSettings.countries.length) return [];
+  var results = [];
+  for (var i = 0; i < holSettings.countries.length; i++) {
+    var c = holSettings.countries[i];
+    var cacheKey = c.code + '-' + year;
+    var hols = holCache[cacheKey];
+    if (!hols) continue;
+    for (var j = 0; j < hols.length; j++) {
+      if (hols[j].date === dateStr) {
+        results.push({
+          name: hols[j].localName || hols[j].name,
+          flag: c.flag,
+          estimated: !!LUNAR_COUNTRIES[c.code]
+        });
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+async function fetchHolidays(countryCode, yr) {
+  var cacheKey = countryCode + '-' + yr;
+  if (holCache[cacheKey]) return holCache[cacheKey];
+  var cached = await holCacheGet(cacheKey);
+  if (cached) { holCache[cacheKey] = cached; return cached; }
+  try {
+    var res = await fetch('https://date.nager.at/api/v3/PublicHolidays/' + yr + '/' + countryCode);
+    if (!res.ok) throw new Error('bad');
+    var d = await res.json();
+    holCache[cacheKey] = d;
+    holCacheSet(cacheKey, d);
+    return d;
+  } catch(e) { return null; }
+}
+
+async function fetchAllHolidays() {
+  if (!holSettings.enabled || !holSettings.countries.length) return;
+  var statusEl = document.getElementById('hol-status');
+  if (statusEl) statusEl.textContent = 'Loading holidays...';
+  var promises = holSettings.countries.map(function(c) { return fetchHolidays(c.code, year); });
+  await Promise.all(promises);
+  if (statusEl) statusEl.textContent = '';
+  render();
+}
+
+// Cell map
+function registerCell(key, cell) {
+  if (!cellMap[key]) cellMap[key] = [];
+  cellMap[key].push(cell);
+}
+
+function applyColorToKey(key, color) {
+  if (!data[key]) data[key] = {};
+  data[key].color = color;
+  var cells = cellMap[key] || [];
+  cells.forEach(function(cell) {
+    for (var i = 1; i <= 5; i++) cell.classList.remove('hl-' + i);
+    if (color > 0) cell.classList.add('hl-' + color);
+  });
+}
+
+function applyImportantToKey(key, val) {
+  if (!data[key]) data[key] = {};
+  data[key].important = val;
+  var cells = cellMap[key] || [];
+  cells.forEach(function(cell) {
+    if (cell.classList.contains('ghost')) return;
+    var tray = cell.querySelector('.ind-tray');
+    if (!tray) return;
+    var star = tray.querySelector('.ind-star');
+    if (val && !star) {
+      var s = document.createElement('span');
+      s.className = 'ind-star';
+      s.textContent = '\u2605';
+      tray.insertBefore(s, tray.firstChild);
+    } else if (!val && star) {
+      star.remove();
+    }
+  });
+}
+
+function applyIconToKey(key, iconId) {
+  if (iconId) { iconData[key] = iconId; } else { delete iconData[key]; }
+  saveIconData();
+  var cells = cellMap[key] || [];
+  cells.forEach(function(cell) {
+    if (cell.classList.contains('ghost')) return;
+    var existing = cell.querySelector('.ind-icon');
+    if (existing) existing.remove();
+    if (iconId) {
+      var ic = null;
+      for (var i = 0; i < ICONS.length; i++) { if (ICONS[i].id === iconId) { ic = ICONS[i]; break; } }
+      if (ic) {
+        var el = document.createElement('span');
+        el.className = 'ind-icon';
+        el.textContent = ic.emoji;
+        el.title = ic.label;
+        cell.appendChild(el);
+      }
+    }
+  });
+}
+
+function syncNoteText(key, text) {
+  var cells = cellMap[key] || [];
+  cells.forEach(function(cell) {
+    var ta = cell.querySelector('.day-note');
+    if (ta && ta.value !== text) ta.value = text;
+  });
+}
+
+function cellFromTouch(touch) {
+  var el = document.elementFromPoint(touch.clientX, touch.clientY);
+  return el ? el.closest('.day-cell[data-key]') : null;
+}
+
+function startPaint(key) {
+  var cur = (data[key] || {}).color || 0;
+  var paint = activeColor === 0 ? 0 : (cur === activeColor ? 0 : activeColor);
+  isDragging = true;
+  dragColor = paint;
+  applyColorToKey(key, paint);
+}
+
+function attachEvents(cell, note, key) {
+  cell.addEventListener('mousedown', function(e) {
+    if (e.target === note) return;
+    e.preventDefault();
+    startPaint(key);
+    saveData();
+  });
+  cell.addEventListener('mouseenter', function() {
+    if (!isDragging) return;
+    applyColorToKey(key, dragColor);
+  });
+  cell.addEventListener('mouseup', function() {
+    if (isDragging) { isDragging = false; saveData(); }
+  });
+  cell.addEventListener('touchstart', function(e) {
+    if (e.target === note) return;
+    e.preventDefault();
+    startPaint(key);
+    saveData();
+  }, {passive: false});
+  cell.addEventListener('touchend', function() {
+    if (isDragging) { isDragging = false; saveData(); }
+  });
+  note.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  note.addEventListener('touchstart', function(e) { e.stopPropagation(); }, {passive: true});
+  note.addEventListener('click', function(e) { e.stopPropagation(); });
+  note.addEventListener('input', function() {
+    if (!data[key]) data[key] = {};
+    data[key].note = note.value;
+    syncNoteText(key, note.value);
+    saveData();
+  });
+}
+
+function makeCell(y, m, d, isGhost) {
+  var dow = dowMon(y, m, d);
+  var key = dayKey(y, m, d);
+  var eff = isGhost ? (data[key] || {}) : effectiveEntry(y, m, d);
+  var cell = document.createElement('div');
+  var cls = 'day-cell';
+  if (isGhost) { cls += ' ghost'; }
+  else {
+    if (isWeekend(dow)) cls += ' weekend';
+    if (isToday(y, m, d)) cls += ' today';
+  }
+  if (eff.color) cls += ' hl-' + eff.color;
+  cell.className = cls;
+  cell.dataset.key = key;
+  cell.dataset.m = m;
+  cell.dataset.d = d;
+
+  var meta = document.createElement('div');
+  meta.className = 'day-meta';
+  var num = document.createElement('span');
+  num.className = 'day-num';
+  num.textContent = d;
+  meta.appendChild(num);
+  var dowEl = document.createElement('span');
+  dowEl.className = 'day-dow';
+  dowEl.textContent = DOW_SHORT[dow];
+  meta.appendChild(dowEl);
+  cell.appendChild(meta);
+
+  // Week number label on Mondays (ISO 8601)
+  if (dow === 0 && !isGhost) {
+    var wn = document.createElement('div');
+    wn.className = 'week-num';
+    wn.textContent = 'W' + isoWeekNum(y, m, d);
+    cell.appendChild(wn);
+  }
+
+  if (!isGhost && isToday(y, m, d)) {
+    var dot = document.createElement('div');
+    dot.className = 'today-dot';
+    cell.appendChild(dot);
+  }
+
+  if (!isGhost) {
+    var ic = getIcon(key);
+    if (ic) {
+      var iconEl = document.createElement('span');
+      iconEl.className = 'ind-icon';
+      iconEl.textContent = ic.emoji;
+      iconEl.title = ic.label;
+      cell.appendChild(iconEl);
+    }
+    var tray = document.createElement('div');
+    tray.className = 'ind-tray';
+    var isImp = !!(data[key] || {}).important;
+    if (isImp) {
+      var s = document.createElement('span');
+      s.className = 'ind-star';
+      s.textContent = '\u2605';
+      tray.appendChild(s);
+    }
+    if (eff.isRecurring) {
+      var r = document.createElement('span');
+      r.className = 'ind-recur';
+      r.textContent = '\u21BB';
+      tray.appendChild(r);
+    }
+    cell.appendChild(tray);
+  }
+
+  var note = document.createElement('textarea');
+  note.className = 'day-note';
+  note.value = isGhost ? ((data[key] || {}).note || '') : (eff.note || '');
+  note.rows = 2;
+  cell.appendChild(note);
+
+  if (!isGhost) {
+    var hols = getHolidaysForDate(key);
+    hols.forEach(function(h) {
+      var hn = document.createElement('div');
+      hn.className = 'hol-note';
+      hn.textContent = h.flag + ' ' + (h.estimated ? '\u2248 ' : '') + h.name;
+      cell.appendChild(hn);
+    });
+  }
+
+  attachEvents(cell, note, key);
+  return cell;
+}
+
+function ghostDay(m, offset) {
+  if (offset < 0) {
+    var pm = m - 1;
+    if (pm < 0) return {y: year-1, m: 11, d: daysInMonth(year-1, 11) + 1 + offset};
+    return {y: year, m: pm, d: daysInMonth(year, pm) + 1 + offset};
+  } else {
+    var nm = m + 1;
+    if (nm > 11) return {y: year+1, m: 0, d: offset + 1};
+    return {y: year, m: nm, d: offset + 1};
+  }
+}
+
+function computeTotalRows(y) {
+  var max = 0;
+  for (var m = 0; m < 12; m++) {
+    var rows = dowMon(y, m, 1) + daysInMonth(y, m);
+    if (rows > max) max = rows;
+  }
+  return max;
+}
+
+function renderAligned() {
+  var planner = document.getElementById('planner');
+  planner.innerHTML = '';
+  planner.style.gridTemplateColumns = 'repeat(12,1fr)';
+  cellMap = {};
+  var TOTAL_ROWS = computeTotalRows(year);
+  var DATA_START = 2;
+
+  for (var m = 0; m < 12; m++) {
+    var hdr = document.createElement('div');
+    hdr.className = 'month-header';
+    hdr.style.cssText = 'grid-column:' + (m+1) + ';grid-row:1;';
+    hdr.textContent = MONTHS[m].substring(0, 3).toUpperCase();
+    planner.appendChild(hdr);
+  }
+
+  for (var m = 0; m < 12; m++) {
+    var days = daysInMonth(year, m);
+    var offset = dowMon(year, m, 1);
+    var lastRow = offset + days - 1;
+
+    if (showGhost) {
+      for (var r = 0; r < offset; r++) {
+        var gd = ghostDay(m, r - offset);
+        var cell = makeCell(gd.y, gd.m, gd.d, true);
+        cell.style.cssText = 'grid-column:' + (m+1) + ';grid-row:' + (DATA_START+r) + ';';
+        registerCell(dayKey(gd.y, gd.m, gd.d), cell);
+        planner.appendChild(cell);
+      }
+    }
+    for (var d = 1; d <= days; d++) {
+      var r2 = offset + (d - 1);
+      var cell2 = makeCell(year, m, d, false);
+      cell2.style.cssText = 'grid-column:' + (m+1) + ';grid-row:' + (DATA_START+r2) + ';';
+      registerCell(dayKey(year, m, d), cell2);
+      planner.appendChild(cell2);
+    }
+    if (showGhost) {
+      for (var r3 = lastRow + 1; r3 < TOTAL_ROWS; r3++) {
+        var gd2 = ghostDay(m, r3 - lastRow - 1);
+        var cell3 = makeCell(gd2.y, gd2.m, gd2.d, true);
+        cell3.style.cssText = 'grid-column:' + (m+1) + ';grid-row:' + (DATA_START+r3) + ';';
+        registerCell(dayKey(gd2.y, gd2.m, gd2.d), cell3);
+        planner.appendChild(cell3);
+      }
+    }
+  }
+}
+
+function renderTop() {
+  var planner = document.getElementById('planner');
+  planner.innerHTML = '';
+  planner.style.gridTemplateColumns = 'repeat(12,1fr)';
+  cellMap = {};
+
+  for (var m = 0; m < 12; m++) {
+    var hdr = document.createElement('div');
+    hdr.className = 'month-header';
+    hdr.style.cssText = 'grid-column:' + (m+1) + ';grid-row:1;';
+    hdr.textContent = MONTHS[m].substring(0, 3).toUpperCase();
+    planner.appendChild(hdr);
+  }
+  for (var m = 0; m < 12; m++) {
+    var days = daysInMonth(year, m);
+    for (var d = 1; d <= days; d++) {
+      var cell = makeCell(year, m, d, false);
+      cell.style.cssText = 'grid-column:' + (m+1) + ';grid-row:' + (d+1) + ';';
+      registerCell(dayKey(year, m, d), cell);
+      planner.appendChild(cell);
+    }
+  }
+}
+
+function render() {
+  document.getElementById('year-label').textContent = year;
+  var isAligned = alignMode === 'aligned';
+  document.getElementById('ghost-toggle-wrap').style.display = isAligned ? 'flex' : 'none';
+  document.getElementById('ghost-sep').style.display = isAligned ? 'block' : 'none';
+  document.getElementById('ghost-legend').style.display = (isAligned && showGhost) ? 'flex' : 'none';
+  if (isAligned) renderAligned(); else renderTop();
+}
+
+// Global drag/touch
+document.addEventListener('mouseup', function() { if (isDragging) { isDragging = false; saveData(); } });
+document.addEventListener('touchmove', function(e) {
+  if (!isDragging) return;
+  var t = e.touches[0];
+  var target = cellFromTouch(t);
+  if (target && target.dataset.key) applyColorToKey(target.dataset.key, dragColor);
+}, {passive: true});
+document.addEventListener('touchend', function() { if (isDragging) { isDragging = false; saveData(); } });
+
+// Swatches
+document.querySelectorAll('.swatch').forEach(function(s) {
+  s.addEventListener('click', function() {
+    document.querySelectorAll('.swatch').forEach(function(x) { x.classList.remove('active'); });
+    s.classList.add('active');
+    activeColor = parseInt(s.dataset.color);
+  });
+});
+
+// Year nav
+document.getElementById('prev-year').addEventListener('click', function() { year--; render(); });
+document.getElementById('next-year').addEventListener('click', function() { year++; render(); });
+
+// Mode toggles
+document.getElementById('mode-aligned').addEventListener('click', function() {
+  alignMode = 'aligned';
+  document.getElementById('mode-aligned').classList.add('active');
+  document.getElementById('mode-top').classList.remove('active');
+  render();
+});
+document.getElementById('mode-top').addEventListener('click', function() {
+  alignMode = 'top';
+  document.getElementById('mode-top').classList.add('active');
+  document.getElementById('mode-aligned').classList.remove('active');
+  render();
+});
+document.getElementById('ghost-chk').addEventListener('change', function(e) {
+  showGhost = e.target.checked;
+  render();
+});
+
+// Clear all (double-click confirm)
+(function() {
+  var btn = document.getElementById('btn-clear-all');
+  var armed = false, timer = null;
+  btn.addEventListener('click', function() {
+    if (!armed) {
+      armed = true;
+      btn.textContent = 'Sure? Click again';
+      btn.style.borderColor = '#c0392b';
+      btn.style.color = '#c0392b';
+      timer = setTimeout(function() {
+        armed = false;
+        btn.textContent = 'Clear all';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2500);
+    } else {
+      clearTimeout(timer);
+      armed = false;
+      btn.textContent = 'Clear all';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      data = {}; saveData(); render();
+    }
+  });
+
+// Legend labels
+function loadLegendLabels() {
+  document.querySelectorAll('.legend-label').forEach(function(inp) {
+    var c = inp.dataset.color;
+    if (legendLabels[c]) inp.value = legendLabels[c];
+    inp.style.width = Math.max(inp.value.length, 3) + 'ch';
+    inp.addEventListener('input', function() {
+      inp.style.width = Math.max(inp.value.length, 3) + 'ch';
+      legendLabels[inp.dataset.color] = inp.value;
+      saveLegend();
+    });
+  });
+}
+
+// Context menu
+function initContextMenu() {
+  var menu = document.getElementById('ctx-menu');
+  var pop = document.getElementById('recur-pop');
+  var iconPop = document.getElementById('icon-pop');
+  var iconGrid = document.getElementById('icon-grid');
+  var ctxKey = null, ctxM = null, ctxD = null, recurColor = 0;
+  var longPressTimer = null;
+
+  // Build icon grid
+  var noneOpt = document.createElement('div');
+  noneOpt.className = 'icon-opt none-opt';
+  noneOpt.textContent = 'None';
+  noneOpt.dataset.iconid = '';
+  iconGrid.appendChild(noneOpt);
+  ICONS.forEach(function(ic) {
+    var el = document.createElement('div');
+    el.className = 'icon-opt';
+    el.textContent = ic.emoji;
+    el.title = ic.label;
+    el.dataset.iconid = ic.id;
+    iconGrid.appendChild(el);
+  });
+
+  function showMenu(x, y, key, m, d) {
+    ctxKey = key; ctxM = m; ctxD = d;
+    var hasR = !!(recur[recurKey(m, d)]);
+    var isImp = !!(data[key] || {}).important;
+    var hasIcon = !!iconData[key];
+    document.getElementById('ctx-star-add').style.display = isImp ? 'none' : 'block';
+    document.getElementById('ctx-star-remove').style.display = isImp ? 'block' : 'none';
+    document.getElementById('ctx-icon-set').style.display = 'block';
+    document.getElementById('ctx-icon-remove').style.display = hasIcon ? 'block' : 'none';
+    document.getElementById('ctx-add').style.display = hasR ? 'none' : 'block';
+    document.getElementById('ctx-edit').style.display = hasR ? 'block' : 'none';
+    document.getElementById('ctx-remove').style.display = hasR ? 'block' : 'none';
+    var px = Math.min(x, window.innerWidth - 200);
+    var py = Math.min(y, window.innerHeight - 240);
+    menu.style.left = px + 'px';
+    menu.style.top = py + 'px';
+    menu.classList.add('visible');
+  }
+  function hideMenu() { menu.classList.remove('visible'); }
+
+  function showPop(x, y, m, d) {
+    var rk = recurKey(m, d);
+    var existing = recur[rk] || {};
+    document.getElementById('recur-pop-title').textContent = 'Every ' + MONTHS[m].substring(0,3) + ' ' + d;
+    document.getElementById('recur-note').value = existing.note || '';
+    recurColor = existing.color || 0;
+    document.querySelectorAll('.recur-swatch').forEach(function(s) {
+      s.classList.toggle('active', parseInt(s.dataset.rc) === recurColor);
+    });
+    var px = Math.min(x, window.innerWidth - 250);
+    var py = Math.min(y, window.innerHeight - 240);
+    pop.style.left = px + 'px'; pop.style.top = py + 'px';
+    pop.classList.add('visible');
+    document.getElementById('recur-note').focus();
+  }
+  function hidePop() { pop.classList.remove('visible'); }
+
+  function showIconPop(x, y, key) {
+    var curIcon = iconData[key] || '';
+    iconGrid.querySelectorAll('.icon-opt').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.iconid === curIcon);
+    });
+    var px = Math.min(x, window.innerWidth - 210);
+    var py = Math.min(y, window.innerHeight - 230);
+    iconPop.style.left = px + 'px'; iconPop.style.top = py + 'px';
+    iconPop.classList.add('visible');
+  }
+  function hideIconPop() { iconPop.classList.remove('visible'); }
+
+  document.getElementById('planner').addEventListener('contextmenu', function(e) {
+    var cell = e.target.closest('.day-cell[data-key]');
+    if (!cell) return;
+    e.preventDefault();
+    showMenu(e.clientX, e.clientY, cell.dataset.key, +cell.dataset.m, +cell.dataset.d);
+  });
+
+  document.getElementById('planner').addEventListener('touchstart', function(e) {
+    var cell = e.target.closest('.day-cell[data-key]');
+    if (!cell || e.target.closest('.day-note')) return;
+    longPressTimer = setTimeout(function() {
+      var t = e.touches[0];
+      showMenu(t.clientX, t.clientY, cell.dataset.key, +cell.dataset.m, +cell.dataset.d);
+    }, 600);
+  }, {passive: true});
+  document.getElementById('planner').addEventListener('touchend', function() { clearTimeout(longPressTimer); }, {passive: true});
+  document.getElementById('planner').addEventListener('touchmove', function() { clearTimeout(longPressTimer); }, {passive: true});
+
+  document.addEventListener('mousedown', function(e) {
+    if (!menu.contains(e.target)) hideMenu();
+    if (!pop.contains(e.target) && !menu.contains(e.target)) hidePop();
+    if (!iconPop.contains(e.target) && !menu.contains(e.target)) hideIconPop();
+  });
+
+  document.getElementById('ctx-star-add').addEventListener('click', function() { hideMenu(); applyImportantToKey(ctxKey, true); saveData(); });
+  document.getElementById('ctx-star-remove').addEventListener('click', function() { hideMenu(); applyImportantToKey(ctxKey, false); saveData(); });
+  document.getElementById('ctx-icon-set').addEventListener('click', function() { hideMenu(); showIconPop(parseInt(menu.style.left), parseInt(menu.style.top), ctxKey); });
+  document.getElementById('ctx-icon-remove').addEventListener('click', function() { hideMenu(); applyIconToKey(ctxKey, null); });
+  document.getElementById('ctx-add').addEventListener('click', function() { hideMenu(); showPop(parseInt(menu.style.left), parseInt(menu.style.top), ctxM, ctxD); });
+  document.getElementById('ctx-edit').addEventListener('click', function() { hideMenu(); showPop(parseInt(menu.style.left), parseInt(menu.style.top), ctxM, ctxD); });
+  document.getElementById('ctx-remove').addEventListener('click', function() {
+    hideMenu();
+    delete recur[recurKey(ctxM, ctxD)];
+    saveRecur();
+    render();
+  });
+
+  document.querySelectorAll('.recur-swatch').forEach(function(s) {
+    s.addEventListener('click', function() {
+      recurColor = parseInt(s.dataset.rc);
+      document.querySelectorAll('.recur-swatch').forEach(function(x) { x.classList.remove('active'); });
+      s.classList.add('active');
+    });
+  });
+
+  document.getElementById('recur-save').addEventListener('click', function() {
+    var note = document.getElementById('recur-note').value.trim();
+    if (!note && !recurColor) { hidePop(); return; }
+    recur[recurKey(ctxM, ctxD)] = {note: note, color: recurColor};
+    saveRecur(); hidePop(); render();
+  });
+  document.getElementById('recur-cancel').addEventListener('click', hidePop);
+
+  iconGrid.addEventListener('click', function(e) {
+    var opt = e.target.closest('.icon-opt');
+    if (!opt) return;
+    applyIconToKey(ctxKey, opt.dataset.iconid || null);
+    hideIconPop();
+  });
+}
+
+// Print
+function initPrint() {
+  var sizePop = document.getElementById('print-size-pop');
+  var btn = document.getElementById('btn-print');
+  btn.addEventListener('click', function(e) {
+    var r = btn.getBoundingClientRect();
+    sizePop.style.left = r.left + 'px';
+    sizePop.style.top = (r.bottom + 6) + 'px';
+    sizePop.classList.toggle('visible');
+    e.stopPropagation();
+  });
+  document.addEventListener('click', function(e) {
+    if (!sizePop.contains(e.target) && e.target !== btn) sizePop.classList.remove('visible');
+  });
+  sizePop.querySelectorAll('.print-opt').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      sizePop.classList.remove('visible');
+      doPrint(opt.dataset.size);
+    });
+  });
+}
+
+function doPrint(size) {
+  var styleEl = document.getElementById('print-page-style');
+  if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'print-page-style'; document.head.appendChild(styleEl); }
+  // Set page size landscape, let CSS handle scaling via width:100% on planner
+  var dims = size === 'a3' ? '420mm 297mm' : '297mm 210mm';
+  styleEl.textContent = '@page{size:' + dims + ';margin:6mm;}';
+  document.getElementById('print-year').textContent = year;
+  window.print();
+}
+
+// Settings
+function initSettings() {
+  var overlay = document.getElementById('settings-overlay');
+  var drawer = document.getElementById('settings-drawer');
+
+  function openSettings() {
+    overlay.classList.add('visible'); drawer.classList.add('visible');
+    document.getElementById('about-me').value = aboutMe;
+    document.getElementById('hol-enabled').checked = holSettings.enabled;
+    document.getElementById('hol-countries-wrap').style.display = holSettings.enabled ? 'block' : 'none';
+    renderCountryList(); renderCountrySelect();
+  }
+  function closeSettings() { overlay.classList.remove('visible'); drawer.classList.remove('visible'); }
+
+  document.getElementById('btn-settings').addEventListener('click', openSettings);
+  document.getElementById('drawer-close').addEventListener('click', closeSettings);
+  overlay.addEventListener('click', closeSettings);
+
+  document.getElementById('save-about').addEventListener('click', function() {
+    aboutMe = document.getElementById('about-me').value;
+    saveAboutMe();
+    var btn = document.getElementById('save-about');
+    btn.textContent = 'Saved \u2713';
+    setTimeout(function() { btn.textContent = 'Save'; }, 1500);
+  });
+
+  document.getElementById('hol-enabled').addEventListener('change', function(e) {
+    holSettings.enabled = e.target.checked;
+    saveHolSettings();
+    document.getElementById('hol-countries-wrap').style.display = holSettings.enabled ? 'block' : 'none';
+    if (holSettings.enabled && holSettings.countries.length) { fetchAllHolidays(); } else { render(); }
+  });
+
+  document.getElementById('btn-add-country').addEventListener('click', function() {
+    var sel = document.getElementById('country-select');
+    var code = sel.value;
+    if (!code) return;
+    var country = null;
+    for (var i = 0; i < COUNTRIES.length; i++) { if (COUNTRIES[i].code === code) { country = COUNTRIES[i]; break; } }
+    if (!country) return;
+    for (var i = 0; i < holSettings.countries.length; i++) { if (holSettings.countries[i].code === code) return; }
+    holSettings.countries.push(country);
+    saveHolSettings();
+    sel.value = '';
+    renderCountryList(); renderCountrySelect();
+    fetchHolidays(code, year).then(function() { render(); renderCountryList(); });
+  });
+
+  function renderCountryList() {
+    var list = document.getElementById('country-list');
+    list.innerHTML = '';
+    holSettings.countries.forEach(function(c) {
+      var row = document.createElement('div');
+      row.className = 'country-row';
+      var loaded = !!holCache[c.code + '-' + year];
+      row.innerHTML = '<span class="country-flag">' + c.flag + '</span><span class="country-name">' + c.name + (loaded ? ' <span style="color:var(--text-muted);font-size:9px;">\u2713</span>' : ' <span style="color:var(--text-muted);font-size:9px;">...</span>') + '</span><button class="country-remove" data-code="' + c.code + '">\u2715</button>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.country-remove').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        holSettings.countries = holSettings.countries.filter(function(c) { return c.code !== btn.dataset.code; });
+        saveHolSettings(); renderCountryList(); renderCountrySelect(); render();
+      });
+    });
+  }
+
+  function renderCountrySelect() {
+    var sel = document.getElementById('country-select');
+    var selected = {};
+    holSettings.countries.forEach(function(c) { selected[c.code] = true; });
+    sel.innerHTML = '<option value="">Add a country...</option>';
+    COUNTRIES.forEach(function(c) {
+      if (selected[c.code]) return;
+      var opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = c.flag + ' ' + c.name;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// AI Advisor
+function buildCalendarContext() {
+  var today = new Date();
+  var todayStr = today.toISOString().split('T')[0];
+  var savedLabels = legendLabels;
+  var colorNames = {
+    '1': savedLabels['1'] || 'Colour 1',
+    '2': savedLabels['2'] || 'Colour 2',
+    '3': savedLabels['3'] || 'Colour 3',
+    '4': savedLabels['4'] || 'Colour 4',
+    '5': savedLabels['5'] || 'Colour 5'
+  };
+  var allData = data;
+  var DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  function fmtYear(y) {
+    var lines = [];
+    var emptyCounts = [];
+    for (var m = 0; m < 12; m++) {
+      var days = daysInMonth(y, m);
+      var mLines = [];
+      var emptyCount = 0;
+      for (var d = 1; d <= days; d++) {
+        var k = dayKey(y, m, d);
+        var dow = (new Date(y, m, d).getDay() + 6) % 7;
+        var isWknd = dow >= 5;
+        var entry = allData[k] || {};
+        var rk = recurKey(m, d);
+        var rec = recur[rk] || {};
+        var iconId = iconData[k];
+        var ic = null;
+        if (iconId) { for (var i = 0; i < ICONS.length; i++) { if (ICONS[i].id === iconId) { ic = ICONS[i]; break; } } }
+        var hols = getHolidaysForDate(k).map(function(h) { return h.name + (h.estimated ? ' (est.)' : ''); }).join(', ');
+        var hasData = entry.note || entry.color || entry.important || iconId || rec.note || rec.color || hols;
+        if (!hasData) { if (!isWknd) emptyCount++; continue; }
+        var parts = [];
+        if (entry.note) parts.push('note: "' + entry.note + '"');
+        else if (rec.note) parts.push('recurring: "' + rec.note + '"');
+        if (entry.color) parts.push('colour: ' + colorNames[entry.color]);
+        else if (rec.color) parts.push('colour: ' + colorNames[rec.color]);
+        if (entry.important) parts.push('IMPORTANT');
+        if (ic) parts.push('icon: ' + ic.label);
+        if (hols) parts.push('holiday: ' + hols);
+        mLines.push('  ' + k + ' ' + DOW[dow] + (isWknd ? ' [wknd]' : '') + ': ' + (parts.join(', ') || 'empty'));
+      }
+      if (mLines.length) lines.push(MONTHS[m].toUpperCase() + ' ' + y + ':\n' + mLines.join('\n'));
+      emptyCounts.push(MONTHS[m].substring(0,3) + ': ' + emptyCount + ' empty weekdays');
+    }
+    return '=== ' + y + ' ===\n' + lines.join('\n\n') + '\n\nEmpty weekdays in ' + y + ':\n' + emptyCounts.join(' | ');
+  }
+
+  var years = [year-1, year, year+1];
+  var recurLines = Object.keys(recur).map(function(k) {
+    var v = recur[k];
+    return '  Every ' + k + ': ' + (v.note || '') + (v.color ? ' [' + colorNames[v.color] + ']' : '');
+  }).join('\n') || '(none)';
+  var colorLegend = Object.keys(colorNames).map(function(k) { return '  Colour ' + k + ' = ' + colorNames[k]; }).join('\n');
+
+  var projCtx = buildProjectContext();
+  var todayMon = new Date().getMonth();
+  var seasonal = '';
+  if (todayMon >= 9 && todayMon <= 10) seasonal = 'SEASONAL NOTE: Autumn - Christmas and school holiday planning season.';
+  else if (todayMon >= 2 && todayMon <= 3) seasonal = 'SEASONAL NOTE: Spring - summer holiday booking season.';
+  else if (todayMon === 11 || todayMon === 0) seasonal = 'SEASONAL NOTE: Holiday/new year period - good time to plan the year ahead.';
+  else if (todayMon >= 6 && todayMon <= 7) seasonal = 'SEASONAL NOTE: Summer - back-to-school planning season.';
+
+  return 'TODAY: ' + todayStr + '\nCURRENT PLANNER YEAR: ' + year + '\n\n'
+    + 'ABOUT THE USER:\n' + (aboutMe || '(No personal context provided)') + '\n\n'
+    + 'COLOUR LEGEND:\n' + colorLegend + '\n\n'
+    + 'CALENDAR DATA (' + years[0] + '-' + years[2] + '):\n'
+    + years.map(fmtYear).join('\n\n') + '\n\n'
+    + 'RECURRING ANNUAL ENTRIES:\n' + recurLines
+    + (projCtx ? '\n\n' + projCtx : '')
+    + (seasonal ? '\n\n' + seasonal : '');
+}
+
+var SYSTEM_PROMPT = 'You are a warm, intelligent personal life-planning advisor with access to the user\'s wall planner calendar and project list. Your role is to help with personal and family life planning - scheduling, time management, and making the most of available time. You have access to three years of calendar data including colour-coded entries, important flags, icons, recurring events, and public holidays, plus a list of active projects with priorities, durations, and deadlines, and personal context about the user. Be warm and direct like a trusted friend who has seen the whole family calendar. Proactively notice busy clusters, free windows, approaching deadlines, conflicts, and birthdays clashing with holidays or travel. For family scheduling questions, reason across all visible calendar entries to find windows that work. For project sequencing, consider priority, duration, deadlines, and existing busy periods together. Flag seasonal planning needs proactively: summer holidays, Christmas, school terms, annual events that need booking ahead. For conflict detection, flag when important things clash or when a project deadline falls during a busy period. Frame empty periods as opportunity. For urgent projects, be willing to suggest whether existing entries could be moved. Keep responses conversational - synthesise and advise, do not just list entries back. Flag estimated holiday dates with caveats.';
+
+function initAI() {
+  var overlay = document.getElementById('ai-overlay');
+  var chatHistory = [];
+  var isLoading = false;
+
+  document.getElementById('btn-ai').addEventListener('click', function() { overlay.classList.add('visible'); });
+  document.getElementById('ai-modal-close').addEventListener('click', function() { overlay.classList.remove('visible'); });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('visible'); });
+
+  document.querySelectorAll('.ai-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.ai-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.ai-panel').forEach(function(p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Snapshot
+  var snapBody = document.getElementById('snap-body');
+  var snapBtn = document.getElementById('snap-btn');
+  snapBtn.addEventListener('click', async function() {
+    if (isLoading) return;
+    isLoading = true; snapBtn.disabled = true; snapBtn.textContent = 'Thinking...';
+    snapBody.classList.remove('empty');
+    snapBody.innerHTML = '<em style="color:var(--text-muted)">Reviewing your calendar...</em>';
+    var ctx = buildCalendarContext();
+    var prompt = 'Please give me a warm, insightful planning snapshot based on my calendar. Tell me how the coming weeks and months look, any important upcoming events, gaps or opportunities worth noting, and anything I might appreciate being reminded of. Keep it to 3-4 paragraphs.\n\n' + ctx;
+    try {
+      var res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: SYSTEM_PROMPT, messages: [{role: 'user', content: prompt}]})
+      });
+      var d = await res.json();
+      var text = (d.content && d.content.find(function(b) { return b.type === 'text'; }));
+      text = text ? text.text : 'No response received.';
+      snapBody.innerHTML = '';
+      text.split('\n\n').forEach(function(para) {
+        if (!para.trim()) return;
+        var p = document.createElement('p');
+        p.textContent = para;
+        snapBody.appendChild(p);
+      });
+    } catch(e) {
+      snapBody.innerHTML = '<em style="color:#c0392b">Could not reach the AI. Please try again.</em>';
+    }
+    isLoading = false; snapBtn.disabled = false; snapBtn.textContent = 'Refresh snapshot';
+  });
+
+  // Chat
+  var chatMessages = document.getElementById('chat-messages');
+  var chatInput = document.getElementById('chat-input');
+  var chatSend = document.getElementById('chat-send');
+  var presetsEl = document.getElementById('chat-presets');
+
+  PRESETS.forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = p;
+    btn.addEventListener('click', function() { sendChat(p); });
+    presetsEl.appendChild(btn);
+  });
+
+  function addMessage(role, text, thinking) {
+    var div = document.createElement('div');
+    div.className = 'chat-msg ' + role + (thinking ? ' thinking' : '');
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+  }
+
+  async function sendChat(text) {
+    if (isLoading || !text.trim()) return;
+    isLoading = true; chatSend.disabled = true; chatInput.value = '';
+    addMessage('user', text);
+    var thinking = addMessage('assistant', 'Thinking...', true);
+    var ctx = buildCalendarContext();
+    var messages = chatHistory.length === 0
+      ? [{role: 'user', content: text + '\n\n[Calendar context:]\n' + ctx}]
+      : chatHistory.concat([{role: 'user', content: text}]);
+    try {
+      var res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: SYSTEM_PROMPT, messages: messages})
+      });
+      var d = await res.json();
+      var reply = (d.content && d.content.find(function(b) { return b.type === 'text'; }));
+      reply = reply ? reply.text : 'No response.';
+      thinking.classList.remove('thinking');
+      thinking.textContent = reply;
+      if (chatHistory.length === 0) {
+        chatHistory.push({role: 'user', content: text + '\n\n[Calendar context:]\n' + ctx});
+      } else {
+        chatHistory.push({role: 'user', content: text});
+      }
+      chatHistory.push({role: 'assistant', content: reply});
+    } catch(e) {
+      thinking.classList.remove('thinking');
+      thinking.textContent = 'Could not reach the AI. Please try again.';
+      thinking.style.color = '#c0392b';
+    }
+    isLoading = false; chatSend.disabled = false;
+  }
+
+  chatSend.addEventListener('click', function() { sendChat(chatInput.value); });
+  chatInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(chatInput.value); }
+  });
+}
+
+// ── Projects ──
+var PROJ_KEY = 'wall-planner-projects-v1';
+var projects = [];
+var projEditId = null;
+var projSortCol = 'priority';
+var projSortDir = 1;
+
+var PRIORITY_ORDER = {urgent:0, high:1, medium:2, low:3};
+
+async function loadProjects() { projects = (await dbLoad(PROJ_KEY, [])) || []; }
+function saveProjects() { dbSave(PROJ_KEY, projects); }
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+function durationStr(weeks, days) {
+  var parts = [];
+  if (weeks > 0) parts.push(weeks + 'w');
+  if (days > 0) parts.push(days + 'd');
+  return parts.length ? parts.join(' ') : '1d';
+}
+
+function durationDays(weeks, days) { return (weeks || 0) * 7 + (days || 1); }
+
+function priorityBadge(p) {
+  var labels = {urgent:'Urgent', high:'High', medium:'Medium', low:'Low'};
+  return '<span class="badge badge-' + p + '">' + (labels[p] || p) + '</span>';
+}
+
+function sharedBadges(proj) {
+  if (!proj.sharedWith) return '';
+  var out = '';
+  if (proj.sharedWith.trim()) out += '<span class="badge badge-shared-out" title="Shared with: ' + proj.sharedWith + '">Out</span>';
+  return out;
+}
+
+function renderProjects() {
+  var tbody = document.getElementById('proj-tbody');
+  if (!tbody) return;
+
+  var filterPri = document.getElementById('proj-filter-priority').value;
+  var filterStatus = document.getElementById('proj-filter-status').value;
+  var filterTravel = document.getElementById('proj-filter-travel').value;
+  var search = (document.getElementById('proj-search').value || '').toLowerCase();
+
+  var filtered = projects.filter(function(p) {
+    if (filterPri && p.priority !== filterPri) return false;
+    if (filterStatus === 'active' && p.status === 'scheduled') return false;
+    if (filterStatus === 'scheduled' && p.status !== 'scheduled') return false;
+    if (filterTravel && p.travel !== filterTravel) return false;
+    if (search && p.name.toLowerCase().indexOf(search) < 0 &&
+        (p.desc || '').toLowerCase().indexOf(search) < 0) return false;
+    return true;
+  });
+
+  filtered.sort(function(a, b) {
+    var av, bv;
+    if (projSortCol === 'priority') { av = PRIORITY_ORDER[a.priority] || 99; bv = PRIORITY_ORDER[b.priority] || 99; }
+    else if (projSortCol === 'duration') { av = durationDays(a.weeks, a.days); bv = durationDays(b.weeks, b.days); }
+    else if (projSortCol === 'deadline') {
+      av = a.deadline || 'zzzz'; bv = b.deadline || 'zzzz';
+    }
+    else { av = (a[projSortCol] || '').toLowerCase(); bv = (b[projSortCol] || '').toLowerCase(); }
+    if (av < bv) return -projSortDir;
+    if (av > bv) return projSortDir;
+    return 0;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="proj-empty">No projects yet. Click "+ Add Project" to get started.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  filtered.forEach(function(proj) {
+    var tr = document.createElement('tr');
+    if (proj.status === 'scheduled') tr.classList.add('proj-scheduled');
+    var deadline = proj.deadline ? proj.deadline : '<span style="color:var(--text-muted)">N/A</span>';
+    var owner = proj.owner || '<span style="color:var(--text-muted)">—</span>';
+    tr.innerHTML =
+      '<td><strong>' + escHtml(proj.name) + '</strong>' + (proj.desc ? '<br><span style="font-size:11px;color:var(--text-muted)">' + escHtml(proj.desc.substring(0,60)) + (proj.desc.length>60?'...':'') + '</span>' : '') + '</td>' +
+      '<td style="white-space:nowrap">' + durationStr(proj.weeks, proj.days) + '</td>' +
+      '<td>' + priorityBadge(proj.priority) + '</td>' +
+      '<td>' + (proj.travel === 'yes' ? '✈️ Yes' : 'No') + '</td>' +
+      '<td>' + escHtml(owner) + '</td>' +
+      '<td style="white-space:nowrap">' + deadline + '</td>' +
+      '<td>' + sharedBadges(proj) + '</td>' +
+      '<td><div class="proj-actions">' +
+        '<button class="btn-proj-action find-time" data-id="' + proj.id + '">Find time</button>' +
+        '<button class="btn-proj-action" data-id="' + proj.id + '" data-action="edit">Edit</button>' +
+        '<button class="btn-proj-action danger" data-id="' + proj.id + '" data-action="delete">Delete</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openProjModal(id) {
+  projEditId = id || null;
+  var proj = id ? projects.find(function(p) { return p.id === id; }) : null;
+  document.getElementById('proj-modal-title').textContent = proj ? 'Edit Project' : 'New Project';
+  document.getElementById('pf-name').value = proj ? proj.name : '';
+  document.getElementById('pf-desc').value = proj ? (proj.desc || '') : '';
+  document.getElementById('pf-weeks').value = proj ? (proj.weeks || 0) : 0;
+  document.getElementById('pf-days').value = proj ? (proj.days || 1) : 1;
+  document.getElementById('pf-priority').value = proj ? proj.priority : 'medium';
+  document.getElementById('pf-deadline').value = proj ? (proj.deadline || '') : '';
+  document.getElementById('pf-travel').value = proj ? (proj.travel || 'no') : 'no';
+  document.getElementById('pf-owner').value = proj ? (proj.owner || '') : (aboutMe ? aboutMe.split(',')[0].trim() : '');
+  document.getElementById('pf-shared').value = proj ? (proj.sharedWith || '') : '';
+  document.getElementById('pf-notes').value = proj ? (proj.notes || '') : '';
+  document.getElementById('pf-status').value = proj ? (proj.status || 'active') : 'active';
+  document.getElementById('proj-modal-overlay').classList.add('visible');
+  document.getElementById('pf-name').focus();
+}
+
+function closeProjModal() {
+  document.getElementById('proj-modal-overlay').classList.remove('visible');
+  projEditId = null;
+}
+
+function saveProjModal() {
+  var name = document.getElementById('pf-name').value.trim();
+  if (!name) { document.getElementById('pf-name').focus(); return; }
+  var proj = {
+    id: projEditId || genId(),
+    name: name,
+    desc: document.getElementById('pf-desc').value.trim(),
+    weeks: parseInt(document.getElementById('pf-weeks').value) || 0,
+    days: parseInt(document.getElementById('pf-days').value) || 1,
+    priority: document.getElementById('pf-priority').value,
+    deadline: document.getElementById('pf-deadline').value,
+    travel: document.getElementById('pf-travel').value,
+    owner: document.getElementById('pf-owner').value.trim(),
+    sharedWith: document.getElementById('pf-shared').value.trim(),
+    notes: document.getElementById('pf-notes').value.trim(),
+    status: document.getElementById('pf-status').value,
+    created: projEditId ? (projects.find(function(p){return p.id===projEditId;})||{}).created || new Date().toISOString() : new Date().toISOString(),
+  };
+  if (projEditId) {
+    var idx = projects.findIndex(function(p) { return p.id === projEditId; });
+    if (idx >= 0) projects[idx] = proj;
+  } else {
+    projects.push(proj);
+  }
+  saveProjects();
+  closeProjModal();
+  renderProjects();
+}
+
+function deleteProject(id) {
+  projects = projects.filter(function(p) { return p.id !== id; });
+  saveProjects();
+  renderProjects();
+}
+
+function findTimeForProject(id) {
+  var proj = projects.find(function(p) { return p.id === id; });
+  if (!proj) return;
+  // Switch to AI chat and pre-load a message
+  document.body.classList.remove('page-projects');
+  document.querySelectorAll('.page-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelector('.page-tab[data-page="chart"]').classList.add('active');
+  // Open AI modal on chat tab
+  document.getElementById('ai-overlay').classList.add('visible');
+  document.querySelectorAll('.ai-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.ai-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelector('.ai-tab[data-tab="chat"]').classList.add('active');
+  document.getElementById('panel-chat').classList.add('active');
+  // Pre-populate with project context
+  var msg = 'I need to find time in my calendar for a project: "' + proj.name + '". ' +
+    'It needs ' + durationStr(proj.weeks, proj.days) + ' of time, ' +
+    'priority is ' + proj.priority +
+    (proj.deadline ? ', deadline is ' + proj.deadline : ', no hard deadline') +
+    (proj.travel === 'yes' ? ', travel is required' : '') +
+    (proj.notes ? '. Notes: ' + proj.notes : '') +
+    '. Please review my calendar and suggest the best windows to fit this in. ' +
+    (proj.priority === 'urgent' ? 'This is urgent — if existing calendar items are in the way, please flag them and ask if any could be rescheduled.' : '');
+  document.getElementById('chat-input').value = msg;
+  document.getElementById('chat-input').focus();
+}
+
+function initProjects() {
+  // Page nav
+  document.querySelectorAll('.page-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.page-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      if (tab.dataset.page === 'projects') {
+        document.body.classList.add('page-projects');
+        renderProjects();
+      } else {
+        document.body.classList.remove('page-projects');
+      }
+    });
+  });
+
+  // Add project button
+  document.getElementById('btn-add-project').addEventListener('click', function() { openProjModal(null); });
+
+  // Modal buttons
+  document.getElementById('proj-modal-close').addEventListener('click', closeProjModal);
+  document.getElementById('proj-modal-cancel').addEventListener('click', closeProjModal);
+  document.getElementById('proj-modal-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('proj-modal-overlay')) closeProjModal();
+  });
+  document.getElementById('proj-modal-save').addEventListener('click', saveProjModal);
+
+  // Table header sort
+  document.querySelectorAll('.proj-table th[data-col]').forEach(function(th) {
+    th.addEventListener('click', function() {
+      var col = th.dataset.col;
+      if (projSortCol === col) { projSortDir *= -1; }
+      else { projSortCol = col; projSortDir = 1; }
+      document.querySelectorAll('.proj-table th').forEach(function(t) { t.classList.remove('sorted'); });
+      th.classList.add('sorted');
+      th.querySelector('.sort-arrow').textContent = projSortDir === 1 ? '↓' : '↑';
+      renderProjects();
+    });
+  });
+
+  // Table row actions (delegated)
+  document.getElementById('proj-tbody').addEventListener('click', function(e) {
+    var btn = e.target.closest('button[data-id]');
+    if (!btn) return;
+    var id = btn.dataset.id;
+    var action = btn.dataset.action;
+    if (action === 'edit') { openProjModal(id); }
+    else if (action === 'delete') {
+      // simple double-click confirm via text change
+      if (btn.textContent === 'Sure?') { deleteProject(id); }
+      else {
+        btn.textContent = 'Sure?';
+        btn.style.color = '#c0392b';
+        btn.style.borderColor = '#c0392b';
+        setTimeout(function() {
+          btn.textContent = 'Delete';
+          btn.style.color = '';
+          btn.style.borderColor = '';
+        }, 2000);
+      }
+    }
+    else { findTimeForProject(id); } // find-time button has no data-action
+  });
+
+  // Filters
+  ['proj-filter-priority','proj-filter-status','proj-filter-travel'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', renderProjects);
+  });
+  document.getElementById('proj-search').addEventListener('input', renderProjects);
+}
+
+function buildProjectContext() {
+  if (!projects.length) return '';
+  var lines = ['PROJECTS (unscheduled):'];
+  projects.forEach(function(p) {
+    if (p.status === 'scheduled') return;
+    var line = '  [' + p.priority.toUpperCase() + '] ' + p.name + ' (' + durationStr(p.weeks, p.days) + ')';
+    if (p.deadline) line += ' deadline:' + p.deadline;
+    if (p.travel === 'yes') line += ' [travel required]';
+    if (p.notes) line += ' - ' + p.notes;
+    lines.push(line);
+  });
+  return lines.join('\n');
+}
+
+
+function renderMiniOverview() {
+  var canvas = document.getElementById('mini-canvas');
+  var ctx = canvas.getContext('2d');
+
+  // Compute grid dimensions (same as aligned mode)
+  var totalRows = computeTotalRows(year);
+  var cols = 12;
+
+  // Cell dimensions on canvas
+  var maxW = Math.round(window.innerWidth * 0.72);
+  var maxH = Math.round(window.innerHeight * 0.68);
+  var cellW = Math.floor((maxW - (cols - 1)) / cols);
+  var cellH = Math.floor((maxH - totalRows) / totalRows);
+  cellW = Math.max(cellW, 6);
+  cellH = Math.max(cellH, 3);
+
+  var headerH = 10;
+  var canvasW = cols * cellW + (cols - 1);
+  var canvasH = headerH + totalRows * cellH + (totalRows - 1);
+
+  canvas.width = canvasW;
+  canvas.height = canvasH;
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+
+  // CSS variable colours resolved
+  var cs = getComputedStyle(document.documentElement);
+  var cBg = '#ffffff';
+  var cWeekend = '#ede9e1';
+  var cBorder = '#e0dbd2';
+  var cHeader = '#1a1814';
+  var cToday = '#1a1814';
+  var hColors = ['#fde68a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff'];
+  var cEntry = 'rgba(26,24,20,0.12)'; // density shading for non-colored entries
+  var cImportant = '#c0922a';
+
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Month headers
+  ctx.fillStyle = cHeader;
+  ctx.font = 'bold 7px monospace';
+  for (var m = 0; m < 12; m++) {
+    var x = m * (cellW + 1);
+    ctx.fillText(MONTHS[m].substring(0,1), x + cellW/2 - 2, 7);
+  }
+
+  var DATA_START = headerH;
+
+  for (var m = 0; m < 12; m++) {
+    var days = daysInMonth(year, m);
+    var offset = dowMon(year, m, 1);
+    for (var d = 1; d <= days; d++) {
+      var row = offset + (d - 1);
+      var x = m * (cellW + 1);
+      var y2 = DATA_START + row * (cellH + 1);
+      var key = dayKey(year, m, d);
+      var dow = dowMon(year, m, d);
+      var eff = effectiveEntry(year, m, d);
+      var isWknd = isWeekend(dow);
+      var isImp = !!(data[key] || {}).important;
+      var today = isToday(year, m, d);
+
+      // Base fill
+      if (eff.color) {
+        ctx.fillStyle = hColors[eff.color - 1];
+      } else if (isWknd) {
+        ctx.fillStyle = cWeekend;
+      } else {
+        ctx.fillStyle = cBg;
+      }
+      ctx.fillRect(x, y2, cellW, cellH);
+
+      // Density overlay for entries without colour
+      if (!eff.color && (eff.note || eff.isRecurring || iconData[key])) {
+        ctx.fillStyle = cEntry;
+        ctx.fillRect(x, y2, cellW, cellH);
+      }
+
+      // Important star dot
+      if (isImp) {
+        ctx.fillStyle = cImportant;
+        ctx.fillRect(x + cellW - 3, y2 + 1, 2, 2);
+      }
+
+      // Today highlight - thin top border
+      if (today) {
+        ctx.fillStyle = cToday;
+        ctx.fillRect(x, y2, cellW, 1);
+      }
+
+      // Cell border
+      ctx.strokeStyle = cBorder;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x + 0.25, y2 + 0.25, cellW - 0.5, cellH - 0.5);
+    }
+  }
+}
+
+function initMiniOverview() {
+  var h1 = document.querySelector('#toolbar h1');
+  var popup = document.getElementById('mini-overview');
+  var visible = false;
+
+  h1.style.cursor = 'pointer';
+  h1.title = 'Click for year overview';
+
+  h1.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (visible) {
+      popup.style.display = 'none';
+      visible = false;
+    } else {
+      popup.style.display = 'block';
+      popup.style.left = '-9999px';
+      popup.style.top = '-9999px';
+      renderMiniOverview();
+      var r = h1.getBoundingClientRect();
+      var pw = popup.offsetWidth;
+      var ph = popup.offsetHeight;
+      var left = r.left;
+      if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+      var top = r.bottom + 8;
+      if (top + ph > window.innerHeight - 12) top = r.top - ph - 8;
+      popup.style.left = Math.max(8, left) + 'px';
+      popup.style.top = Math.max(8, top) + 'px';
+      visible = true;
+    }
+  });
+
+  document.addEventListener('click', function() {
+    if (visible) {
+      popup.style.display = 'none';
+      visible = false;
+    }
+  });
+}
+
+// Boot
+var booted = false;
+
+async function bootApp() {
+  if (booted) return;
+  booted = true;
+  await Promise.all([
+    loadData(),
+    loadProjects(),
+    loadRecur(),
+    loadIconData(),
+    loadAboutMe(),
+    loadHolSettings(),
+    loadLegend()
+  ]);
+  loadLegendLabels();
+  render();
+  initContextMenu();
+  initSettings();
+  initPrint();
+  initAI();
+  initProjects();
+  initMiniOverview();
+  if (holSettings.enabled && holSettings.countries.length) fetchAllHolidays();
+}
+
+// Auth overlay (magic link)
+function hideAuthOverlay() {
+  var el = document.getElementById('auth-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function showAuthOverlay() {
+  var el = document.getElementById('auth-overlay');
+  if (el) { el.style.display = 'flex'; return; }
+  el = document.createElement('div');
+  el.id = 'auth-overlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f4f1ea;font-family:inherit;';
+  el.innerHTML =
+    '<div style="background:#fff;border:1px solid #d8d2c4;border-radius:10px;padding:32px;max-width:360px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,0.08);text-align:center;">' +
+      '<h2 style="margin:0 0 8px;font-size:20px;">Wall Planner</h2>' +
+      '<p style="margin:0 0 20px;color:#666;font-size:14px;">Sign in to access your planner</p>' +
+      '<input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" ' +
+        'style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d8d2c4;border-radius:6px;font-size:14px;margin-bottom:12px;" />' +
+      '<button id="auth-send" ' +
+        'style="width:100%;padding:10px 12px;border:none;border-radius:6px;background:#2c2c2c;color:#fff;font-size:14px;cursor:pointer;">Send magic link</button>' +
+      '<div id="auth-status" style="margin-top:12px;color:#666;font-size:13px;min-height:18px;"></div>' +
+    '</div>';
+  document.body.appendChild(el);
+  var emailInput = el.querySelector('#auth-email');
+  var sendBtn = el.querySelector('#auth-send');
+  var statusEl = el.querySelector('#auth-status');
+  function sendLink() {
+    var email = emailInput.value.trim();
+    if (!email) { statusEl.textContent = 'Please enter your email.'; return; }
+    sendBtn.disabled = true;
+    statusEl.textContent = 'Sending...';
+    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } })
+      .then(function(res) {
+        sendBtn.disabled = false;
+        statusEl.textContent = res.error ? res.error.message : 'Check your email for the magic link.';
+      });
+  }
+  sendBtn.addEventListener('click', sendLink);
+  emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendLink(); });
+}
+
+async function init() {
+  var sessionRes = await sb.auth.getSession();
+  var session = sessionRes.data ? sessionRes.data.session : null;
+  if (session) {
+    currentUser = session.user;
+    hideAuthOverlay();
+    await bootApp();
+  } else {
+    showAuthOverlay();
+  }
+  sb.auth.onAuthStateChange(function(event, session) {
+    if (session && session.user) {
+      currentUser = session.user;
+      hideAuthOverlay();
+      bootApp();
+    }
+  });
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
