@@ -171,6 +171,42 @@
   #recur-save{background:var(--text);color:white;border-color:var(--text);}
   #recur-cancel{background:transparent;color:var(--text-muted);}
 
+  /* multi-day event */
+  .btn-multi-event{background:none;border:1px solid var(--border-light);border-radius:4px;padding:4px 10px;
+    font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-muted);cursor:pointer;}
+  .btn-multi-event:hover{color:var(--text);border-color:var(--border);}
+  #multi-event-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
+    border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:14px 16px;width:260px;display:none;}
+  #multi-event-pop.visible{display:block;}
+  #multi-event-pop h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:10px;}
+  #multi-event-pop label{display:block;font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;margin-top:10px;}
+  #me-note{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:5px 7px;
+    font-size:11px;font-family:'DM Sans',sans-serif;background:white;color:var(--text);outline:none;}
+  #me-start,#me-end{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:5px 7px;
+    font-size:11px;font-family:'DM Sans',sans-serif;background:white;color:var(--text);outline:none;}
+  .me-swatches{display:flex;gap:5px;margin-top:4px;}
+  .me-swatch{width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;}
+  .me-swatch:hover{transform:scale(1.15);}
+  .me-swatch.active{border-color:var(--text);}
+  .me-swatch[data-mc="0"]{background:white;border-color:var(--border);}
+  .me-swatch[data-mc="1"]{background:var(--h1);}
+  .me-swatch[data-mc="2"]{background:var(--h2);}
+  .me-swatch[data-mc="3"]{background:var(--h3);}
+  .me-swatch[data-mc="4"]{background:var(--h4);}
+  .me-swatch[data-mc="5"]{background:var(--h5);}
+  .me-options{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .me-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-muted);cursor:pointer;
+    margin-top:0!important;text-transform:none!important;letter-spacing:0!important;}
+  .me-toggle input{width:auto;}
+  .me-btns{display:flex;gap:6px;margin-top:12px;}
+  .me-btns button{flex:1;padding:5px 0;font-size:10px;font-family:'DM Mono',monospace;
+    letter-spacing:.08em;text-transform:uppercase;border-radius:4px;cursor:pointer;border:1px solid var(--border);}
+  #me-save{background:var(--text);color:white;border-color:var(--text);}
+  #me-cancel{background:transparent;color:var(--text-muted);}
+
   /* icon picker */
   #icon-pop{position:fixed;z-index:1001;background:var(--bg);border:1px solid var(--border);
     border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.15);padding:12px;width:200px;display:none;}
@@ -552,7 +588,7 @@
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     html,body{width:100%;height:100%;margin:0;padding:0;}
     #page-nav,#toolbar,#legend,#settings-overlay,#settings-drawer,
-    #ctx-menu,#recur-pop,#fam-pop,#icon-pop,#print-size-pop,#ai-overlay,
+    #ctx-menu,#recur-pop,#fam-pop,#multi-event-pop,#icon-pop,#print-size-pop,#ai-overlay,
     #projects-page{display:none!important;}
     body{background:white;}
     #print-header{display:block!important;}
@@ -622,6 +658,7 @@
   <div class="tb-projects" style="display:none;">
     <button class="btn-add-project" id="btn-add-project">+ Add Project</button>
   </div>
+  <button class="btn-multi-event tb-chart" id="btn-multi-event">+ Event</button>
   <button class="btn-ai" id="btn-ai">&#10022; Ask Claude</button>
   <button class="btn-print tb-chart" id="btn-print">&#9113; Print / PDF</button>
   <button class="btn-settings" id="btn-settings">&#9881; Settings</button>
@@ -777,6 +814,7 @@
   <div class="ctx-item" id="ctx-star-remove">&#9733; Remove importance</div>
   <div class="ctx-item" id="ctx-icon-set">Set icon</div>
   <div class="ctx-item danger" id="ctx-icon-remove">Remove icon</div>
+  <div class="ctx-item" id="ctx-multi-event">&#65291; Multi-day event</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" id="ctx-add">&#8635; Add recurrence</div>
   <div class="ctx-item" id="ctx-edit">&#8635; Edit recurrence</div>
@@ -826,6 +864,39 @@
   <div class="recur-btns">
     <button id="recur-save">Save</button>
     <button id="recur-cancel">Cancel</button>
+  </div>
+</div>
+
+<div id="multi-event-pop">
+  <h3>Multi-day event</h3>
+  <label>Event name</label>
+  <input type="text" id="me-note" placeholder="e.g. Family holiday">
+  <label>Colour</label>
+  <div class="me-swatches">
+    <div class="me-swatch active" data-mc="0"></div>
+    <div class="me-swatch" data-mc="1"></div>
+    <div class="me-swatch" data-mc="2"></div>
+    <div class="me-swatch" data-mc="3"></div>
+    <div class="me-swatch" data-mc="4"></div>
+    <div class="me-swatch" data-mc="5"></div>
+  </div>
+  <label>Start date</label>
+  <input type="date" id="me-start">
+  <label>End date</label>
+  <input type="date" id="me-end">
+  <div class="me-options">
+    <label class="me-toggle">
+      <input type="checkbox" id="me-skip-weekends">
+      <span>Skip weekends</span>
+    </label>
+    <label class="me-toggle">
+      <input type="checkbox" id="me-skip-existing" checked>
+      <span>Skip days with existing notes</span>
+    </label>
+  </div>
+  <div class="me-btns">
+    <button id="me-save">Apply</button>
+    <button id="me-cancel">Cancel</button>
   </div>
 </div>
 
@@ -1877,6 +1948,16 @@ function initContextMenu() {
     delete recur[recurKey(ctxM, ctxD)];
     saveRecur();
     render();
+  });
+
+  document.getElementById('ctx-multi-event').addEventListener('click', function() {
+    hideMenu();
+    // Format ctxKey as YYYY-MM-DD for the date input
+    window.showMultiEventPop(
+      parseInt(menu.style.left),
+      parseInt(menu.style.top),
+      ctxKey
+    );
   });
 
   document.querySelectorAll('.recur-swatch').forEach(function(s) {
@@ -3012,6 +3093,98 @@ function initMobile() {
   if (isMobile() && mqLandscape.matches) showOverview();
 }
 
+function initMultiEvent() {
+  var pop = document.getElementById('multi-event-pop');
+  var meColor = 0;
+
+  function showPop(x, y, prefillDate) {
+    // Reset form
+    document.getElementById('me-note').value = '';
+    document.getElementById('me-start').value = prefillDate || '';
+    document.getElementById('me-end').value = prefillDate || '';
+    meColor = 0;
+    document.querySelectorAll('.me-swatch').forEach(function(s) {
+      s.classList.toggle('active', parseInt(s.dataset.mc) === 0);
+    });
+    // Position
+    var px = Math.min(x, window.innerWidth - 270);
+    var py = Math.min(y, window.innerHeight - 380);
+    pop.style.left = px + 'px';
+    pop.style.top = py + 'px';
+    pop.classList.add('visible');
+    document.getElementById('me-note').focus();
+  }
+
+  function hidePop() { pop.classList.remove('visible'); }
+
+  // Colour swatches
+  document.querySelectorAll('.me-swatch').forEach(function(s) {
+    s.addEventListener('click', function() {
+      meColor = parseInt(s.dataset.mc);
+      document.querySelectorAll('.me-swatch').forEach(function(x) {
+        x.classList.toggle('active', parseInt(x.dataset.mc) === meColor);
+      });
+    });
+  });
+
+  // Toolbar button
+  document.getElementById('btn-multi-event').addEventListener('click', function(e) {
+    var r = e.target.getBoundingClientRect();
+    showPop(r.left, r.bottom + 6, '');
+  });
+
+  // Context menu hook — expose showPop globally for context menu to call
+  window.showMultiEventPop = showPop;
+
+  // Save
+  document.getElementById('me-save').addEventListener('click', function() {
+    var note = document.getElementById('me-note').value.trim();
+    var start = document.getElementById('me-start').value;
+    var end = document.getElementById('me-end').value;
+    var skipWeekends = document.getElementById('me-skip-weekends').checked;
+    var skipExisting = document.getElementById('me-skip-existing').checked;
+
+    if (!start || !end) return;
+    if (end < start) { alert('End date must be after start date'); return; }
+
+    var cur = new Date(start + 'T00:00:00');
+    var endDate = new Date(end + 'T00:00:00');
+
+    while (cur <= endDate) {
+      var dow = cur.getDay(); // 0=Sun, 6=Sat
+      var isWknd = dow === 0 || dow === 6;
+      if (!skipWeekends || !isWknd) {
+        var y = cur.getFullYear();
+        var m = cur.getMonth();
+        var d = cur.getDate();
+        var key = dayKey(y, m, d);
+        var existing = data[key] || {};
+        var hasNote = !!(existing.note && existing.note.trim());
+        if (!skipExisting || !hasNote) {
+          if (!data[key]) data[key] = {};
+          if (note) data[key].note = note;
+          if (meColor > 0) data[key].color = meColor;
+          // Update live cells if visible
+          if (meColor > 0) applyColorToKey(key, meColor);
+          syncNoteText(key, note);
+        }
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    saveData();
+    hidePop();
+    render();
+  });
+
+  document.getElementById('me-cancel').addEventListener('click', hidePop);
+
+  // Close on outside click
+  document.addEventListener('mousedown', function(e) {
+    if (!pop.contains(e.target)) hidePop();
+  });
+}
+
 // Boot
 var booted = false;
 
@@ -3037,6 +3210,7 @@ async function bootApp() {
   initProjects();
   initMiniOverview();
   initMobile();
+  initMultiEvent();
   if (holSettings.enabled && holSettings.countries.length) fetchAllHolidays();
 }
 
