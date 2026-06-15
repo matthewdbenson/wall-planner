@@ -2177,11 +2177,10 @@ function initSettings() {
           var email = inp.value.trim();
           if (!email) return;
           status.textContent = 'Inviting...';
-          sb.from('family_members').insert({ group_id: group.id, email: email, role: 'member' }).then(function(res) {
+          sb.from('family_invites').insert({ group_id: group.id, email: email, invited_by: currentUser.id }).then(function(res) {
             if (res.error) { status.textContent = 'Could not invite: ' + res.error.message; return; }
             inp.value = '';
-            status.textContent = 'Invited ' + email;
-            refreshFamilyUI();
+            status.textContent = 'Invited ' + email + ' — they\'ll join automatically when they sign in.';
           });
         });
         inviteRow.appendChild(inp);
