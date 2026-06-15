@@ -873,6 +873,57 @@ var COUNTRIES = [
 
 var LUNAR_COUNTRIES = {AE:1,EG:1,ID:1,IL:1,IN:1,MY:1,NG:1,PK:1,QA:1,SA:1,TR:1};
 
+// Static fallback for countries not supported by the Nager.Date API (e.g. UAE)
+var STATIC_HOLIDAYS = {
+  'AE': {
+    2025: [
+      { date: '2025-01-01', name: "New Year's Day", localName: "رأس السنة الميلادية" },
+      { date: '2025-03-30', name: "Eid Al Fitr (est.)", localName: "عيد الفطر" },
+      { date: '2025-03-31', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2025-04-01', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2025-06-06', name: "Arafat Day (est.)", localName: "يوم عرفة" },
+      { date: '2025-06-07', name: "Eid Al Adha (est.)", localName: "عيد الأضحى" },
+      { date: '2025-06-08', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2025-06-09', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2025-06-27', name: "Islamic New Year (est.)", localName: "رأس السنة الهجرية" },
+      { date: '2025-09-04', name: "Prophet's Birthday (est.)", localName: "المولد النبوي" },
+      { date: '2025-11-18', name: "Commemoration Day", localName: "يوم الشهيد" },
+      { date: '2025-12-02', name: "UAE National Day", localName: "اليوم الوطني" },
+      { date: '2025-12-03', name: "UAE National Day Holiday", localName: "اليوم الوطني" },
+    ],
+    2026: [
+      { date: '2026-01-01', name: "New Year's Day", localName: "رأس السنة الميلادية" },
+      { date: '2026-03-20', name: "Eid Al Fitr (est.)", localName: "عيد الفطر" },
+      { date: '2026-03-21', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2026-03-22', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2026-05-27', name: "Arafat Day (est.)", localName: "يوم عرفة" },
+      { date: '2026-05-28', name: "Eid Al Adha (est.)", localName: "عيد الأضحى" },
+      { date: '2026-05-29', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2026-05-30', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2026-06-16', name: "Islamic New Year (est.)", localName: "رأس السنة الهجرية" },
+      { date: '2026-08-25', name: "Prophet's Birthday (est.)", localName: "المولد النبوي" },
+      { date: '2026-11-18', name: "Commemoration Day", localName: "يوم الشهيد" },
+      { date: '2026-12-02', name: "UAE National Day", localName: "اليوم الوطني" },
+      { date: '2026-12-03', name: "UAE National Day Holiday", localName: "اليوم الوطني" },
+    ],
+    2027: [
+      { date: '2027-01-01', name: "New Year's Day", localName: "رأس السنة الميلادية" },
+      { date: '2027-03-09', name: "Eid Al Fitr (est.)", localName: "عيد الفطر" },
+      { date: '2027-03-10', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2027-03-11', name: "Eid Al Fitr Holiday (est.)", localName: "عيد الفطر" },
+      { date: '2027-05-16', name: "Arafat Day (est.)", localName: "يوم عرفة" },
+      { date: '2027-05-17', name: "Eid Al Adha (est.)", localName: "عيد الأضحى" },
+      { date: '2027-05-18', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2027-05-19', name: "Eid Al Adha Holiday (est.)", localName: "عيد الأضحى" },
+      { date: '2027-06-06', name: "Islamic New Year (est.)", localName: "رأس السنة الهجرية" },
+      { date: '2027-08-14', name: "Prophet's Birthday (est.)", localName: "المولد النبوي" },
+      { date: '2027-11-18', name: "Commemoration Day", localName: "يوم الشهيد" },
+      { date: '2027-12-02', name: "UAE National Day", localName: "اليوم الوطني" },
+      { date: '2027-12-03', name: "UAE National Day Holiday", localName: "اليوم الوطني" },
+    ]
+  }
+};
+
 var PRESETS = [
   "How are the next few months looking?",
   "When's a good window for a holiday or break?",
@@ -1020,14 +1071,23 @@ async function fetchHolidays(countryCode, yr) {
   if (holCache[cacheKey]) return holCache[cacheKey];
   var cached = await holCacheGet(cacheKey);
   if (cached) { holCache[cacheKey] = cached; return cached; }
+  var d = null;
   try {
     var res = await fetch('https://date.nager.at/api/v3/PublicHolidays/' + yr + '/' + countryCode);
-    if (!res.ok) throw new Error('bad');
-    var d = await res.json();
-    holCache[cacheKey] = d;
-    holCacheSet(cacheKey, d);
-    return d;
-  } catch(e) { return null; }
+    if (res.ok) {
+      var json = await res.json();
+      if (Array.isArray(json) && json.length) d = json;
+    }
+  } catch(e) { d = null; }
+  // Fall back to static data when the API returns nothing usable (e.g. UAE)
+  if (!d) {
+    var stat = STATIC_HOLIDAYS[countryCode] && STATIC_HOLIDAYS[countryCode][yr];
+    if (stat) d = stat;
+  }
+  if (!d) return null;
+  holCache[cacheKey] = d;
+  holCacheSet(cacheKey, d);
+  return d;
 }
 
 async function fetchAllHolidays() {
