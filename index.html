@@ -410,6 +410,69 @@
     letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
   .btn-secondary:hover{color:var(--text);border-color:var(--text);}
 
+  /* mobile-only elements are hidden on desktop */
+  .mobile-only{display:none;}
+
+  /* mobile layout (<=768px): single month view + mobile toolbar */
+  @media (max-width:768px){
+    /* hide desktop-only toolbar pieces (override inline display with !important) */
+    #toolbar h1,
+    #year-label-wrap,
+    .toggle-group,
+    #ghost-toggle-wrap,
+    #ghost-sep,
+    .btn-print,
+    .btn-clear,
+    .sw-lbl,
+    #toolbar .sep{display:none!important;}
+
+    #toolbar{gap:8px;padding:8px 12px;}
+
+    /* show mobile-only toolbar pieces (tb-chart keeps them hidden on projects page) */
+    .mobile-only{display:flex;}
+
+    .mobile-month-nav{display:flex;align-items:center;gap:8px;}
+    .mobile-month-nav button{background:none;border:1px solid var(--border);border-radius:4px;
+      width:32px;height:32px;font-size:18px;display:flex;align-items:center;justify-content:center;
+      color:var(--text);cursor:pointer;flex-shrink:0;}
+    #m-month-label{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;
+      min-width:128px;text-align:center;color:var(--text);}
+    #m-overview-btn{margin-left:auto;background:none;border:1px solid var(--border-light);
+      border-radius:4px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;
+      text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);cursor:pointer;
+      align-items:center;gap:4px;}
+
+    .swatch-row{width:100%;justify-content:space-between;gap:4px;}
+    .swatch{width:30px;height:30px;}
+
+    .btn-ai{padding:6px 12px;}
+    .btn-settings{padding:6px 10px;}
+
+    /* grid: single month, 7 columns (Mon–Sun) */
+    #planner-outer{overflow-x:hidden;padding:10px 10px 30px;}
+    #planner{min-width:0;width:100%;gap:4px;grid-template-columns:repeat(7,1fr)!important;}
+    .month-header.mobile-dow{font-size:10px;text-align:center;padding:4px 0 4px;
+      border-bottom:1.5px solid var(--text);margin-bottom:2px;letter-spacing:.06em;}
+    .day-cell{min-height:64px;}
+    .day-note{font-size:15px;min-height:30px;line-height:1.25;}
+    .day-num{font-size:13px;}
+    .day-dow{display:none;}      /* redundant: columns are weekdays */
+    .week-num{display:none;}     /* week numbers hidden on mobile */
+
+    /* fullscreen year overview */
+    #mini-overview.mobile-fullscreen{position:fixed;inset:0;width:100vw;height:100vh;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      border:none;border-radius:0;box-shadow:none;padding:16px;background:var(--bg);z-index:10000;}
+    #mini-overview.mobile-fullscreen .mini-label{display:none;}
+    #mini-overview.mobile-fullscreen canvas{width:96vw!important;height:auto!important;max-height:78vh;}
+    .mini-mobile-nav{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+    .mini-mobile-nav button{background:none;border:1px solid var(--border);border-radius:4px;
+      width:36px;height:36px;font-size:18px;color:var(--text);cursor:pointer;
+      display:flex;align-items:center;justify-content:center;}
+    #mini-year-label{font-family:'DM Mono',monospace;font-size:14px;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--text);}
+  }
+
   /* print */
   #print-header{display:none;text-align:center;padding:4mm 0 5mm;font-family:'DM Mono',monospace;font-size:14pt;font-weight:500;letter-spacing:.1em;}
   @media print{
@@ -455,6 +518,12 @@
     </div>
   </div>
   <div class="sep tb-chart"></div>
+  <div class="mobile-month-nav mobile-only tb-chart">
+    <button id="m-prev-month" aria-label="Previous month">&#8249;</button>
+    <span id="m-month-label">January 2026</span>
+    <button id="m-next-month" aria-label="Next month">&#8250;</button>
+  </div>
+  <button id="m-overview-btn" class="mobile-only tb-chart">&#128065; Overview</button>
   <div class="swatch-row tb-chart">
     <span class="sw-lbl">Colour</span>
     <div class="swatch active" data-color="0"></div>
@@ -722,6 +791,11 @@
 </div>
 
 <div id="mini-overview">
+  <div class="mini-mobile-nav mobile-only">
+    <button id="mini-prev-year" aria-label="Previous year">&#8249;</button>
+    <span id="mini-year-label">Wall Planner 2026</span>
+    <button id="mini-next-year" aria-label="Next year">&#8250;</button>
+  </div>
   <div class="mini-label">Year at a glance</div>
   <canvas id="mini-canvas"></canvas>
 </div>
@@ -828,6 +902,10 @@ var legendLabels = {};
 var isDragging = false;
 var dragColor = null;
 var cellMap = {};
+// Mobile state (persists within the session)
+var mobileMonth = new Date().getMonth();
+var overviewActive = false;
+function isMobile() { return window.innerWidth <= 768; }
 
 // Storage helpers (Supabase planner_data table, keyed by store_key per user)
 async function dbLoad(storeKey, fallback) {
@@ -1259,8 +1337,47 @@ function renderTop() {
   }
 }
 
+// Single-month, 7-column grid for mobile. Reuses makeCell() unchanged.
+function renderMobile(y, m) {
+  var planner = document.getElementById('planner');
+  planner.innerHTML = '';
+  planner.style.gridTemplateColumns = 'repeat(7,1fr)';
+  cellMap = {};
+
+  // Mon–Sun weekday header row
+  for (var i = 0; i < 7; i++) {
+    var hdr = document.createElement('div');
+    hdr.className = 'month-header mobile-dow';
+    hdr.style.cssText = 'grid-column:' + (i+1) + ';grid-row:1;';
+    hdr.textContent = DOW_SHORT[i];
+    planner.appendChild(hdr);
+  }
+
+  var days = daysInMonth(y, m);
+  var offset = dowMon(y, m, 1); // 0 = Monday
+  for (var d = 1; d <= days; d++) {
+    var idx = offset + (d - 1);
+    var col = idx % 7;
+    var weekRow = Math.floor(idx / 7);
+    var cell = makeCell(y, m, d, false);
+    cell.style.cssText = 'grid-column:' + (col+1) + ';grid-row:' + (weekRow+2) + ';';
+    registerCell(dayKey(y, m, d), cell);
+    planner.appendChild(cell);
+  }
+}
+
+function updateMobileMonthLabel() {
+  var el = document.getElementById('m-month-label');
+  if (el) el.textContent = MONTHS[mobileMonth] + ' ' + year;
+}
+
 function render() {
   document.getElementById('year-label').textContent = year;
+  if (isMobile()) {
+    renderMobile(year, mobileMonth);
+    updateMobileMonthLabel();
+    return;
+  }
   var isAligned = alignMode === 'aligned';
   document.getElementById('ghost-toggle-wrap').style.display = isAligned ? 'flex' : 'none';
   document.getElementById('ghost-sep').style.display = isAligned ? 'block' : 'none';
@@ -2193,6 +2310,95 @@ function initMiniOverview() {
   });
 }
 
+// Mobile: fullscreen year overview (reuses #mini-overview + renderMiniOverview)
+function updateMiniYearLabel() {
+  var el = document.getElementById('mini-year-label');
+  if (el) el.textContent = 'Wall Planner ' + year;
+}
+
+function showOverview() {
+  if (!isMobile()) return;
+  overviewActive = true;
+  var ov = document.getElementById('mini-overview');
+  ov.classList.add('mobile-fullscreen');
+  ov.style.display = 'flex';
+  renderMiniOverview();
+  updateMiniYearLabel();
+}
+
+function hideOverview() {
+  overviewActive = false;
+  var ov = document.getElementById('mini-overview');
+  ov.classList.remove('mobile-fullscreen');
+  ov.style.display = 'none';
+}
+
+function initMobile() {
+  // Month picker — arrows move month and roll over the year
+  document.getElementById('m-prev-month').addEventListener('click', function() {
+    mobileMonth--;
+    if (mobileMonth < 0) { mobileMonth = 11; year--; }
+    render();
+  });
+  document.getElementById('m-next-month').addEventListener('click', function() {
+    mobileMonth++;
+    if (mobileMonth > 11) { mobileMonth = 0; year++; }
+    render();
+  });
+
+  // Overview button opens fullscreen year overview
+  document.getElementById('m-overview-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    showOverview();
+  });
+
+  // Tap overview (outside the year nav) returns to month view
+  document.getElementById('mini-overview').addEventListener('click', function(e) {
+    if (!overviewActive) return;
+    if (e.target.closest && e.target.closest('.mini-mobile-nav')) return;
+    hideOverview();
+  });
+
+  // Year navigation within the overview
+  document.getElementById('mini-prev-year').addEventListener('click', function(e) {
+    e.stopPropagation();
+    year--;
+    render();
+    renderMiniOverview();
+    updateMiniYearLabel();
+  });
+  document.getElementById('mini-next-year').addEventListener('click', function(e) {
+    e.stopPropagation();
+    year++;
+    render();
+    renderMiniOverview();
+    updateMiniYearLabel();
+  });
+
+  // Orientation: mobile landscape -> overview, mobile portrait -> month view
+  var mqLandscape = window.matchMedia('(orientation: landscape)');
+  function handleOrientation(e) {
+    if (!isMobile()) { if (overviewActive) hideOverview(); return; }
+    if (e.matches) { showOverview(); }
+    else { hideOverview(); render(); }
+  }
+  mqLandscape.addEventListener('change', handleOrientation);
+
+  // Re-render only when crossing the mobile/desktop breakpoint
+  var wasMobile = isMobile();
+  window.addEventListener('resize', function() {
+    var nowMobile = isMobile();
+    if (nowMobile !== wasMobile) {
+      wasMobile = nowMobile;
+      if (!nowMobile && overviewActive) hideOverview();
+      render();
+    }
+  });
+
+  // If first loaded on a mobile device already in landscape, show overview
+  if (isMobile() && mqLandscape.matches) showOverview();
+}
+
 // Boot
 var booted = false;
 
@@ -2216,6 +2422,7 @@ async function bootApp() {
   initAI();
   initProjects();
   initMiniOverview();
+  initMobile();
   if (holSettings.enabled && holSettings.countries.length) fetchAllHolidays();
 }
 
