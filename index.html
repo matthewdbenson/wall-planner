@@ -2625,10 +2625,10 @@ function initSettings() {
           var email = inp.value.trim();
           if (!email) return;
           status.textContent = 'Inviting...';
-          sb.from('family_invites').insert({ group_id: group.id, email: email, invited_by: currentUser.id }).then(function(res) {
-            if (res.error) { status.textContent = 'Could not invite: ' + res.error.message; return; }
+          sb.rpc('invite_family_member', { group_id_param: group.id, invite_email: email }).then(function(res) {
+            if (res.error) { status.textContent = res.error.message; return; }
             inp.value = '';
-            status.textContent = 'Invited ' + email + ' — they\'ll join automatically when they sign in.';
+            status.textContent = 'Invited ✓';
           });
         });
         inviteRow.appendChild(inp);
