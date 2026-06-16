@@ -332,6 +332,34 @@
     padding:6px 14px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
     text-transform:uppercase;color:var(--text-muted);cursor:pointer;}
   .btn-sign-out:hover{border-color:#c0392b;color:#c0392b;}
+
+  /* email + password auth overlay */
+  #auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;}
+  #auth-box{width:min(380px,92vw);background:white;border:1px solid var(--border);border-radius:12px;
+    padding:32px;box-shadow:0 8px 32px rgba(0,0,0,0.1);}
+  #auth-box h1{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-muted);margin-bottom:24px;text-align:center;}
+  #auth-tabs{display:flex;background:var(--weekend);border-radius:20px;padding:2px;border:1px solid var(--border-light);margin-bottom:20px;}
+  .auth-tab{flex:1;border:none;background:transparent;border-radius:16px;padding:6px 0;font-size:11px;
+    font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    color:var(--text-muted);transition:background .15s,color .15s;}
+  .auth-tab.active{background:var(--text);color:white;}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{display:block;font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text-muted);margin-bottom:5px;}
+  .auth-field input{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:9px 11px;font-size:13px;
+    font-family:'DM Sans',sans-serif;color:var(--text);background:white;outline:none;transition:border-color .15s;box-sizing:border-box;}
+  .auth-field input:focus{border-color:var(--border);}
+  #auth-submit{width:100%;background:var(--text);color:white;border:none;border-radius:6px;padding:10px;font-size:12px;
+    font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;margin-top:4px;transition:opacity .15s;}
+  #auth-submit:hover{opacity:0.85;}
+  #auth-submit:disabled{opacity:0.45;cursor:default;}
+  #auth-error{font-size:12px;color:#c0392b;margin-bottom:12px;min-height:18px;text-align:center;}
+  #auth-message{font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;min-height:18px;}
+  #auth-forgot{text-align:center;margin-top:10px;}
+  #auth-forgot-btn{background:none;border:none;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.06em;
+    color:var(--text-muted);cursor:pointer;text-decoration:underline;text-transform:uppercase;}
+  #auth-forgot-btn:hover{color:var(--text);}
   .s-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
   .s-toggle input{display:none;}
   .s-track{width:32px;height:18px;border-radius:9px;background:var(--weekend);border:1px solid var(--border);
@@ -592,6 +620,21 @@
   .family-edit-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;
     font-size:11px;color:var(--text);}
   .btn-create-group{margin-top:4px;}
+  .btn-leave-group{margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:4px;
+    padding:5px 12px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-muted);cursor:pointer;}
+  .btn-leave-group:hover{border-color:#c0392b;color:#c0392b;}
+  .group-name-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .group-name-input{flex:1;border:1px solid var(--border-light);border-radius:4px;padding:6px 9px;font-size:13px;
+    font-family:'DM Sans',sans-serif;color:var(--text);background:white;outline:none;font-weight:600;}
+  .group-name-input:focus{border-color:var(--border);}
+  .btn-rename-group{background:none;border:1px solid var(--border-light);border-radius:4px;padding:5px 10px;font-size:10px;
+    font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);cursor:pointer;white-space:nowrap;}
+  .btn-rename-group:hover{border-color:var(--border);color:var(--text);}
+  .btn-delete-group{margin-top:12px;background:transparent;border:1px solid var(--border-light);border-radius:4px;
+    padding:5px 12px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-muted);cursor:pointer;display:block;}
+  .btn-delete-group:hover{border-color:#c0392b;color:#c0392b;}
 
   /* mobile-only elements are hidden on desktop */
   .mobile-only{display:none;}
@@ -1054,6 +1097,20 @@
       </div>
     </div>
     <div class="setting-section">
+      <h3>Your display name</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">
+        How your name appears to family members in the grid.
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="display-name-input" placeholder="e.g. Matt"
+          style="flex:1;border:1px solid var(--border-light);border-radius:4px;
+          padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;
+          color:var(--text);background:white;outline:none;">
+        <button id="save-display-name" class="btn-add-country">Save</button>
+      </div>
+      <div id="display-name-status" style="font-size:10px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+    <div class="setting-section">
       <h3>Family</h3>
       <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Shared calendars and projects with family members.</p>
       <div id="family-groups-list"></div>
@@ -1065,6 +1122,7 @@
         <span class="setting-label">Signed in as <span id="signed-in-email" style="font-weight:600"></span></span>
       </div>
       <button id="btn-sign-out" class="btn-sign-out">Sign out</button>
+      <button id="btn-change-password" class="btn-sign-out" style="margin-top:6px;">Change password</button>
     </div>
   </div>
 </div>
@@ -1102,6 +1160,32 @@
   </div>
   <div class="mini-label">Year at a glance</div>
   <canvas id="mini-canvas"></canvas>
+</div>
+
+<div id="auth-overlay">
+  <div id="auth-box">
+    <h1>Wall Planner</h1>
+    <div id="auth-tabs">
+      <button class="auth-tab active" data-auth="signin">Sign in</button>
+      <button class="auth-tab" data-auth="signup">Create account</button>
+    </div>
+    <div id="auth-error"></div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+    </div>
+    <div class="auth-field" id="auth-confirm-wrap" style="display:none;">
+      <label>Confirm password</label>
+      <input type="password" id="auth-confirm" placeholder="Confirm password" autocomplete="new-password">
+    </div>
+    <button id="auth-submit">Sign in</button>
+    <div id="auth-forgot"><button id="auth-forgot-btn">Forgot password?</button></div>
+    <div id="auth-message"></div>
+  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1356,6 +1440,7 @@ function familyEntriesForDate(dateStr) {
 
 // ---- Family grid: members' shared calendar data ----
 var memberPlannerData = {}; // keyed by user_id -> that member's data object
+var profiles = {}; // keyed by user_id -> display name string
 var familyMonth = new Date().getMonth();
 var familyYear = new Date().getFullYear();
 var activeFamilyGroup = null;
@@ -1374,18 +1459,39 @@ function membersForActiveGroup() {
   return familyMembers.filter(function(m) { return m.group_id === activeFamilyGroup.id; });
 }
 
+// Resolve a member's shown name: saved profile name, else email prefix
+function displayName(userId, email) {
+  return profiles[userId] || (email ? email.split('@')[0] : '?');
+}
 function memberDisplayName(m) {
-  if (!m || !m.email) return '?';
-  return m.email.split('@')[0];
+  if (!m) return '?';
+  return displayName(m.user_id, m.email);
 }
 function memberInitial(m) {
   var n = memberDisplayName(m);
   return (n.charAt(0) || '?').toUpperCase();
 }
 function memberNameByUserId(uid) {
-  for (var i = 0; i < familyMembers.length; i++) { if (familyMembers[i].user_id === uid) return memberDisplayName(familyMembers[i]); }
-  if (currentUser && uid === currentUser.id) return memberDisplayName({ email: currentUser.email });
-  return null;
+  var email = null;
+  for (var i = 0; i < familyMembers.length; i++) { if (familyMembers[i].user_id === uid) { email = familyMembers[i].email; break; } }
+  if (!email && currentUser && uid === currentUser.id) email = currentUser.email;
+  if (!email && !profiles[uid]) return null;
+  return displayName(uid, email);
+}
+
+// Load display names for all group members from the profiles table
+async function loadProfiles() {
+  profiles = {};
+  if (!currentUser) return;
+  var ids = allMemberUserIds();
+  try {
+    if (ids.length) {
+      var res = await sb.from('profiles').select('user_id, display_name').in('user_id', ids);
+      if (!res.error && res.data) {
+        res.data.forEach(function(row) { if (row.display_name) profiles[row.user_id] = row.display_name; });
+      }
+    }
+  } catch(e) { console.error('loadProfiles failed', e); }
 }
 
 // Load every group member's personal calendar data (STORAGE_KEY rows), grouped by user_id.
@@ -2257,6 +2363,7 @@ function initSettings() {
     document.getElementById('hol-enabled').checked = holSettings.enabled;
     document.getElementById('hol-countries-wrap').style.display = holSettings.enabled ? 'block' : 'none';
     document.getElementById('signed-in-email').textContent = (currentUser && currentUser.email) || '';
+    document.getElementById('display-name-input').value = (currentUser && profiles[currentUser.id]) || '';
     renderCountryList(); renderCountrySelect();
     renderFamilyGroups();
   }
@@ -2268,6 +2375,28 @@ function initSettings() {
 
   document.getElementById('btn-sign-out').addEventListener('click', function() {
     sb.auth.signOut().then(function() { window.location.reload(); });
+  });
+
+  document.getElementById('btn-change-password').addEventListener('click', function() {
+    if (!currentUser || !currentUser.email) return;
+    var btn = document.getElementById('btn-change-password');
+    sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: window.location.href }).then(function(res) {
+      btn.textContent = res.error ? 'Error — try again' : 'Reset email sent ✓';
+      setTimeout(function() { btn.textContent = 'Change password'; }, 2500);
+    });
+  });
+
+  document.getElementById('save-display-name').addEventListener('click', function() {
+    if (!currentUser) return;
+    var name = document.getElementById('display-name-input').value.trim();
+    var statusEl = document.getElementById('display-name-status');
+    sb.from('profiles').upsert({ user_id: currentUser.id, display_name: name }, { onConflict: 'user_id' }).then(function(res) {
+      if (res.error) { statusEl.textContent = 'Error: ' + res.error.message; return; }
+      if (name) profiles[currentUser.id] = name; else delete profiles[currentUser.id];
+      statusEl.textContent = 'Saved ✓';
+      setTimeout(function() { statusEl.textContent = ''; }, 2000);
+      if (document.body.classList.contains('page-family')) renderFamilyGrid();
+    });
   });
 
   document.getElementById('save-about').addEventListener('click', function() {
@@ -2357,10 +2486,42 @@ function initSettings() {
       var box = document.createElement('div');
       box.className = 'family-group';
 
-      var nameEl = document.createElement('div');
-      nameEl.className = 'family-group-name';
-      nameEl.textContent = group.name;
-      box.appendChild(nameEl);
+      if (owner) {
+        var nameRow = document.createElement('div');
+        nameRow.className = 'group-name-row';
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'group-name-input';
+        nameInput.value = group.name;
+        nameInput.setAttribute('data-gid', group.id);
+        var renameBtn = document.createElement('button');
+        renameBtn.className = 'btn-rename-group';
+        renameBtn.setAttribute('data-gid', group.id);
+        renameBtn.textContent = 'Rename';
+        var renameStatus = document.createElement('span');
+        renameStatus.style.cssText = 'font-size:10px;color:var(--text-muted);white-space:nowrap;';
+        renameBtn.addEventListener('click', function() {
+          var newName = nameInput.value.trim();
+          if (!newName || newName === group.name) return;
+          sb.from('family_groups').update({ name: newName }).eq('id', group.id).then(function(res) {
+            if (res.error) { renameStatus.textContent = res.error.message; return; }
+            group.name = newName;
+            renameStatus.textContent = 'Renamed ✓';
+            setTimeout(function() { renameStatus.textContent = ''; }, 1500);
+            setupFamilyToolbar();
+            if (document.body.classList.contains('page-family')) renderFamilyGrid();
+          });
+        });
+        nameRow.appendChild(nameInput);
+        nameRow.appendChild(renameBtn);
+        nameRow.appendChild(renameStatus);
+        box.appendChild(nameRow);
+      } else {
+        var nameEl = document.createElement('div');
+        nameEl.className = 'family-group-name';
+        nameEl.textContent = group.name;
+        box.appendChild(nameEl);
+      }
 
       var roleEl = document.createElement('div');
       roleEl.className = 'family-group-role';
@@ -2371,23 +2532,40 @@ function initSettings() {
         var row = document.createElement('div');
         row.className = 'family-member';
         var left = document.createElement('span');
-        left.textContent = m.email + ' ';
+        left.textContent = displayName(m.user_id, m.email) + ' ';
         var roleSpan = document.createElement('span');
         roleSpan.className = 'fm-role';
         roleSpan.textContent = m.role || 'member';
         left.appendChild(roleSpan);
         row.appendChild(left);
-        if (owner && m.user_id !== currentUser.id) {
+        if (owner) {
           var rmBtn = document.createElement('button');
           rmBtn.className = 'fm-remove';
           rmBtn.textContent = '✕';
-          rmBtn.title = 'Remove member';
-          rmBtn.addEventListener('click', function() {
-            sb.from('family_members').delete().eq('group_id', group.id).eq('user_id', m.user_id).then(function(res) {
-              if (res.error) { console.error('remove member failed', res.error); return; }
-              refreshFamilyUI();
+          if (m.user_id === currentUser.id) {
+            rmBtn.disabled = true;
+            rmBtn.title = 'You cannot remove yourself';
+            rmBtn.style.opacity = '0.4';
+            rmBtn.style.cursor = 'default';
+          } else {
+            rmBtn.title = 'Remove member';
+            var rmArmed = false, rmTimer = null;
+            rmBtn.addEventListener('click', function() {
+              if (!rmArmed) {
+                rmArmed = true;
+                rmBtn.textContent = 'Sure?';
+                rmTimer = setTimeout(function() { rmArmed = false; rmBtn.textContent = '✕'; }, 2500);
+                return;
+              }
+              clearTimeout(rmTimer); rmArmed = false; rmBtn.textContent = '✕';
+              sb.from('family_members').delete().eq('group_id', group.id).eq('user_id', m.user_id).then(function(res) {
+                if (res.error) { console.error('remove member failed', res.error); return; }
+                familyMembers = familyMembers.filter(function(x) { return !(x.group_id === group.id && x.user_id === m.user_id); });
+                renderFamilyGroups();
+                renderFamilyGrid();
+              });
             });
-          });
+          }
           row.appendChild(rmBtn);
         }
         box.appendChild(row);
@@ -2434,6 +2612,88 @@ function initSettings() {
         inviteRow.appendChild(invBtn);
         box.appendChild(inviteRow);
         box.appendChild(status);
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete-group';
+        delBtn.setAttribute('data-gid', group.id);
+        delBtn.textContent = 'Delete group';
+        var delStage = 0, delTimer = null;
+        function resetDel() { delStage = 0; delBtn.textContent = 'Delete group'; }
+        delBtn.addEventListener('click', function() {
+          clearTimeout(delTimer);
+          if (delStage === 0) {
+            delStage = 1;
+            delBtn.textContent = 'This deletes ALL family entries and projects. Sure?';
+            delTimer = setTimeout(resetDel, 3000);
+            return;
+          }
+          if (delStage === 1) {
+            delStage = 2;
+            delBtn.textContent = 'Really sure? Cannot be undone.';
+            delTimer = setTimeout(resetDel, 3000);
+            return;
+          }
+          resetDel();
+          sb.rpc('delete_family_group', { group_id_param: group.id }).then(function(res) {
+            if (res.error) {
+              delBtn.textContent = res.error.message || 'Could not delete group';
+              delTimer = setTimeout(resetDel, 3000);
+              return;
+            }
+            var gid = group.id;
+            familyGroups = familyGroups.filter(function(g) { return g.id !== gid; });
+            familyMembers = familyMembers.filter(function(x) { return x.group_id !== gid; });
+            familyEntries = familyEntries.filter(function(x) { return x.group_id !== gid; });
+            familyProjects = familyProjects.filter(function(x) { return x.group_id !== gid; });
+            if (activeFamilyGroup && activeFamilyGroup.id === gid) activeFamilyGroup = null;
+            renderFamilyGroups();
+            setupFamilyToolbar();
+            renderFamilyGrid();
+            if (!familyGroups.length) {
+              var ftab = document.querySelector('.page-tab[data-page="family"]');
+              if (ftab) ftab.style.display = 'none';
+              if (document.body.classList.contains('page-family')) {
+                document.body.classList.remove('page-family');
+                document.querySelectorAll('.page-tab').forEach(function(t) { t.classList.remove('active'); });
+                var chartTab = document.querySelector('.page-tab[data-page="chart"]');
+                if (chartTab) chartTab.classList.add('active');
+              }
+            }
+          });
+        });
+        box.appendChild(delBtn);
+      }
+
+      if (!owner) {
+        var leaveBtn = document.createElement('button');
+        leaveBtn.className = 'btn-leave-group';
+        leaveBtn.setAttribute('data-gid', group.id);
+        leaveBtn.textContent = 'Leave group';
+        var leaveArmed = false, leaveTimer = null;
+        leaveBtn.addEventListener('click', function() {
+          if (!leaveArmed) {
+            leaveArmed = true;
+            leaveBtn.textContent = 'Sure? Click again';
+            leaveTimer = setTimeout(function() { leaveArmed = false; leaveBtn.textContent = 'Leave group'; }, 2500);
+            return;
+          }
+          clearTimeout(leaveTimer); leaveArmed = false; leaveBtn.textContent = 'Leave group';
+          sb.rpc('leave_family_group', { group_id_param: group.id }).then(function(res) {
+            if (res.error) {
+              leaveBtn.textContent = res.error.message || 'Could not leave group';
+              setTimeout(function() { leaveBtn.textContent = 'Leave group'; }, 3000);
+              return;
+            }
+            var gid = group.id;
+            familyGroups = familyGroups.filter(function(g) { return g.id !== gid; });
+            familyMembers = familyMembers.filter(function(x) { return x.group_id !== gid; });
+            if (activeFamilyGroup && activeFamilyGroup.id === gid) activeFamilyGroup = null;
+            renderFamilyGroups();
+            setupFamilyToolbar();
+            renderFamilyGrid();
+          });
+        });
+        box.appendChild(leaveBtn);
       }
 
       wrap.appendChild(box);
@@ -3460,7 +3720,7 @@ function initFamilyGrid() {
       if (tab.dataset.page === 'family') {
         document.body.classList.add('page-family');
         setupFamilyToolbar();
-        loadMemberPlannerData().then(renderFamilyGrid);
+        Promise.all([loadMemberPlannerData(), loadProfiles()]).then(renderFamilyGrid);
       } else {
         document.body.classList.remove('page-family');
       }
@@ -3534,6 +3794,7 @@ async function bootApp() {
   ]);
   await loadFamilyData();
   await loadMemberPlannerData();
+  await loadProfiles();
   loadLegendLabels();
   render();
   initContextMenu();
@@ -3548,7 +3809,7 @@ async function bootApp() {
   if (holSettings.enabled && holSettings.countries.length) fetchAllHolidays();
 }
 
-// Auth overlay (magic link)
+// Auth overlay (email + password)
 function hideAuthOverlay() {
   var el = document.getElementById('auth-overlay');
   if (el) el.style.display = 'none';
@@ -3556,40 +3817,90 @@ function hideAuthOverlay() {
 
 function showAuthOverlay() {
   var el = document.getElementById('auth-overlay');
-  if (el) { el.style.display = 'flex'; return; }
-  el = document.createElement('div');
-  el.id = 'auth-overlay';
-  el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f4f1ea;font-family:inherit;';
-  el.innerHTML =
-    '<div style="background:#fff;border:1px solid #d8d2c4;border-radius:10px;padding:32px;max-width:360px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,0.08);text-align:center;">' +
-      '<h2 style="margin:0 0 8px;font-size:20px;">Wall Planner</h2>' +
-      '<p style="margin:0 0 20px;color:#666;font-size:14px;">Sign in to access your planner</p>' +
-      '<input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" ' +
-        'style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d8d2c4;border-radius:6px;font-size:14px;margin-bottom:12px;" />' +
-      '<button id="auth-send" ' +
-        'style="width:100%;padding:10px 12px;border:none;border-radius:6px;background:#2c2c2c;color:#fff;font-size:14px;cursor:pointer;">Send magic link</button>' +
-      '<div id="auth-status" style="margin-top:12px;color:#666;font-size:13px;min-height:18px;"></div>' +
-    '</div>';
-  document.body.appendChild(el);
-  var emailInput = el.querySelector('#auth-email');
-  var sendBtn = el.querySelector('#auth-send');
-  var statusEl = el.querySelector('#auth-status');
-  function sendLink() {
-    var email = emailInput.value.trim();
-    if (!email) { statusEl.textContent = 'Please enter your email.'; return; }
-    sendBtn.disabled = true;
-    statusEl.textContent = 'Sending...';
-    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } })
-      .then(function(res) {
-        sendBtn.disabled = false;
-        statusEl.textContent = res.error ? res.error.message : 'Check your email for the magic link.';
-      });
-  }
-  sendBtn.addEventListener('click', sendLink);
-  emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendLink(); });
+  if (el) el.style.display = 'flex';
+}
+
+function initAuth(onSuccess) {
+  var overlay = document.getElementById('auth-overlay');
+  if (!overlay) return;
+  var isSignUp = false;
+
+  // Tab switching
+  document.querySelectorAll('.auth-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      isSignUp = tab.dataset.auth === 'signup';
+      document.querySelectorAll('.auth-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('auth-submit').textContent = isSignUp ? 'Create account' : 'Sign in';
+      document.getElementById('auth-confirm-wrap').style.display = isSignUp ? 'block' : 'none';
+      document.getElementById('auth-error').textContent = '';
+      document.getElementById('auth-message').textContent = '';
+    });
+  });
+
+  // Submit
+  document.getElementById('auth-submit').addEventListener('click', async function() {
+    var email = document.getElementById('auth-email').value.trim();
+    var password = document.getElementById('auth-password').value;
+    var confirm = document.getElementById('auth-confirm').value;
+    var errorEl = document.getElementById('auth-error');
+    var submitBtn = document.getElementById('auth-submit');
+
+    errorEl.textContent = '';
+
+    if (!email || !password) { errorEl.textContent = 'Please enter email and password.'; return; }
+    if (isSignUp && password !== confirm) { errorEl.textContent = 'Passwords do not match.'; return; }
+    if (isSignUp && password.length < 8) { errorEl.textContent = 'Password must be at least 8 characters.'; return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = isSignUp ? 'Creating account...' : 'Signing in...';
+
+    var res = isSignUp
+      ? await sb.auth.signUp({ email: email, password: password })
+      : await sb.auth.signInWithPassword({ email: email, password: password });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = isSignUp ? 'Create account' : 'Sign in';
+
+    if (res.error) {
+      errorEl.textContent = res.error.message;
+      return;
+    }
+
+    if (isSignUp && !res.data.session) {
+      // Email confirmation required
+      document.getElementById('auth-message').textContent = 'Check your email to confirm your account, then sign in.';
+      return;
+    }
+
+    overlay.style.display = 'none';
+    onSuccess(res.data.user);
+  });
+
+  // Enter key
+  document.getElementById('auth-overlay').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('auth-submit').click();
+  });
+
+  // Forgot password
+  document.getElementById('auth-forgot-btn').addEventListener('click', async function() {
+    var email = document.getElementById('auth-email').value.trim();
+    var errorEl = document.getElementById('auth-error');
+    var messageEl = document.getElementById('auth-message');
+    if (!email) { errorEl.textContent = 'Enter your email address first.'; return; }
+    errorEl.textContent = '';
+    var res = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href
+    });
+    if (res.error) { errorEl.textContent = res.error.message; return; }
+    messageEl.textContent = 'Password reset email sent — check your inbox.';
+  });
 }
 
 async function init() {
+  // Wire the auth form once (handlers are inert while the overlay is hidden)
+  initAuth(function(user) { currentUser = user; bootApp(); });
+
   var sessionRes = await sb.auth.getSession();
   var session = sessionRes.data ? sessionRes.data.session : null;
   if (session) {
@@ -3599,11 +3910,11 @@ async function init() {
   } else {
     showAuthOverlay();
   }
+
+  // Return to the auth overlay if the session ends
   sb.auth.onAuthStateChange(function(event, session) {
-    if (session && session.user) {
-      currentUser = session.user;
-      hideAuthOverlay();
-      bootApp();
+    if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+      showAuthOverlay();
     }
   });
 }
