@@ -360,6 +360,15 @@
   #auth-forgot-btn{background:none;border:none;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.06em;
     color:var(--text-muted);cursor:pointer;text-decoration:underline;text-transform:uppercase;}
   #auth-forgot-btn:hover{color:var(--text);}
+  #auth-reset-wrap{display:none;}
+  #auth-reset-wrap h2{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-muted);margin-bottom:20px;text-align:center;}
+  #auth-reset-submit{width:100%;background:var(--text);color:white;border:none;border-radius:6px;padding:10px;
+    font-size:12px;font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+    margin-top:4px;transition:opacity .15s;}
+  #auth-reset-submit:hover{opacity:0.85;}
+  #auth-reset-error{font-size:12px;color:#c0392b;margin-top:12px;min-height:18px;text-align:center;}
+  #auth-reset-message{font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;min-height:18px;}
   .s-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
   .s-toggle input{display:none;}
   .s-track{width:32px;height:18px;border-radius:9px;background:var(--weekend);border:1px solid var(--border);
@@ -1185,6 +1194,20 @@
     <button id="auth-submit">Sign in</button>
     <div id="auth-forgot"><button id="auth-forgot-btn">Forgot password?</button></div>
     <div id="auth-message"></div>
+    <div id="auth-reset-wrap">
+      <h2>Set new password</h2>
+      <div class="auth-field">
+        <label>New password</label>
+        <input type="password" id="auth-new-password" placeholder="Min. 8 characters" autocomplete="new-password">
+      </div>
+      <div class="auth-field">
+        <label>Confirm new password</label>
+        <input type="password" id="auth-new-confirm" placeholder="Confirm password" autocomplete="new-password">
+      </div>
+      <button id="auth-reset-submit">Set password</button>
+      <div id="auth-reset-error"></div>
+      <div id="auth-reset-message"></div>
+    </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3825,6 +3848,23 @@ function initAuth(onSuccess) {
   if (!overlay) return;
   var isSignUp = false;
 
+  function showPasswordResetForm() {
+    var box = document.getElementById('auth-box');
+    Array.prototype.forEach.call(box.children, function(child) {
+      if (child.id === 'auth-reset-wrap' || child.tagName === 'H1') return;
+      child.style.display = 'none';
+    });
+    document.getElementById('auth-reset-wrap').style.display = 'block';
+    overlay.style.display = 'flex';
+    var np = document.getElementById('auth-new-password');
+    if (np) np.focus();
+  }
+
+  // Arrived via a password-reset email link (#...type=recovery) → show reset form
+  if (window.location.hash && window.location.hash.indexOf('type=recovery') !== -1) {
+    showPasswordResetForm();
+  }
+
   // Tab switching
   document.querySelectorAll('.auth-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
@@ -3895,15 +3935,42 @@ function initAuth(onSuccess) {
     if (res.error) { errorEl.textContent = res.error.message; return; }
     messageEl.textContent = 'Password reset email sent — check your inbox.';
   });
+
+  // Supabase exchanges the recovery token in the URL hash and fires PASSWORD_RECOVERY
+  sb.auth.onAuthStateChange(function(event) {
+    if (event === 'PASSWORD_RECOVERY') showPasswordResetForm();
+  });
+
+  // Set new password
+  document.getElementById('auth-reset-submit').addEventListener('click', async function() {
+    var newPass = document.getElementById('auth-new-password').value;
+    var confirm = document.getElementById('auth-new-confirm').value;
+    var errorEl = document.getElementById('auth-reset-error');
+    errorEl.textContent = '';
+    if (newPass.length < 8) { errorEl.textContent = 'Password must be at least 8 characters.'; return; }
+    if (newPass !== confirm) { errorEl.textContent = 'Passwords do not match.'; return; }
+    var res = await sb.auth.updateUser({ password: newPass });
+    if (res.error) { errorEl.textContent = res.error.message; return; }
+    // Password set — clear hash, boot app normally
+    if (res.data && res.data.user) currentUser = res.data.user;
+    window.location.hash = '';
+    document.getElementById('auth-overlay').style.display = 'none';
+    bootApp();
+  });
 }
 
 async function init() {
   // Wire the auth form once (handlers are inert while the overlay is hidden)
   initAuth(function(user) { currentUser = user; bootApp(); });
 
+  // A recovery link establishes a session; don't auto-boot — show the reset form instead
+  var isRecovery = !!(window.location.hash && window.location.hash.indexOf('type=recovery') !== -1);
+
   var sessionRes = await sb.auth.getSession();
   var session = sessionRes.data ? sessionRes.data.session : null;
-  if (session) {
+  if (isRecovery) {
+    // initAuth has shown the "Set new password" form; wait for the user to submit
+  } else if (session) {
     currentUser = session.user;
     hideAuthOverlay();
     await bootApp();
