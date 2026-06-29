@@ -1535,8 +1535,6 @@ async function loadMemberPlannerData() {
       }
     }
   } catch(e) { console.error('loadMemberPlannerData failed', e); }
-  // Current user's own (in-memory) data is the source of truth for their column
-  memberPlannerData[currentUser.id] = data;
   console.log('[loadMemberPlannerData] after currentUser override — currentUser.id:', currentUser.id, 'in-memory data keys:', Object.keys(data));
 }
 
@@ -3674,7 +3672,7 @@ function setupFamilyToolbar() {
 
 function buildMemberCell(m, key, isMe) {
   var html = '<div class="fg-cell">';
-  var md = memberPlannerData[m.user_id] || {};
+  var md = isMe ? data : (memberPlannerData[m.user_id] || {});
   var entry = md[key];
   if (entry && (entry.note || entry.color)) {
     var cls = 'fg-entry' + (entry.color ? ' hl-' + entry.color : '') + (isMe ? ' editable' : '');
