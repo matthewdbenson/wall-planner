@@ -1528,12 +1528,16 @@ async function loadMemberPlannerData() {
     if (ids.length) {
       var res = await sb.from('planner_data').select('user_id,value').eq('store_key', STORAGE_KEY).in('user_id', ids);
       if (!res.error && res.data) {
+        console.log('[loadMemberPlannerData] raw rows:', res.data.map(function(row) {
+          return { user_id: row.user_id, valueKeys: Object.keys(row.value || {}) };
+        }));
         res.data.forEach(function(row) { memberPlannerData[row.user_id] = row.value || {}; });
       }
     }
   } catch(e) { console.error('loadMemberPlannerData failed', e); }
   // Current user's own (in-memory) data is the source of truth for their column
   memberPlannerData[currentUser.id] = data;
+  console.log('[loadMemberPlannerData] after currentUser override — currentUser.id:', currentUser.id, 'in-memory data keys:', Object.keys(data));
 }
 
 // Key helpers
@@ -3701,6 +3705,14 @@ function renderFamilyGrid() {
   updateFamilyMonthLabel();
 
   var members = membersForActiveGroup();
+
+  members.forEach(function(m) {
+    var isMe = currentUser && m.user_id === currentUser.id;
+    var md = memberPlannerData[m.user_id];
+    console.log('[renderFamilyGrid] member', m.user_id, isMe ? '(me)' : '(other)',
+      '— found in memberPlannerData:', md !== undefined,
+      '— keys:', md ? Object.keys(md) : 'NONE');
+  });
 
   var headRow = '<tr><th class="day-col">Day</th>';
   members.forEach(function(m) {
