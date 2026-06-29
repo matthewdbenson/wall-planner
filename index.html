@@ -1373,7 +1373,8 @@ function isMobile() { return window.innerWidth <= 768; }
 // Storage helpers (Supabase planner_data table, keyed by store_key per user)
 async function dbLoad(storeKey, fallback) {
   try {
-    var res = await sb.from('planner_data').select('value').eq('store_key', storeKey).maybeSingle();
+    if (!currentUser) return fallback;
+    var res = await sb.from('planner_data').select('value').eq('store_key', storeKey).eq('user_id', currentUser.id).maybeSingle();
     if (res.error || !res.data) return fallback;
     return res.data.value;
   } catch(e) { return fallback; }
