@@ -1528,16 +1528,10 @@ async function loadMemberPlannerData() {
     if (ids.length) {
       var res = await sb.from('planner_data').select('user_id,value').eq('store_key', STORAGE_KEY).in('user_id', ids);
       if (!res.error && res.data) {
-        res.data.forEach(function(row) {
-          var keys = Object.keys(row.value || {});
-          var sample = keys.slice(0,3).map(function(k) { return k + ':' + JSON.stringify((row.value||{})[k]); }).join(' | ');
-          console.log('[loadMemberPlannerData] row user_id=' + row.user_id + ' keyCount=' + keys.length + ' sample=[' + sample + ']');
-          memberPlannerData[row.user_id] = row.value || {};
-        });
+        res.data.forEach(function(row) { memberPlannerData[row.user_id] = row.value || {}; });
       }
     }
   } catch(e) { console.error('loadMemberPlannerData failed', e); }
-  console.log('[loadMemberPlannerData] after currentUser override — currentUser.id:', currentUser.id, 'in-memory data keys:', Object.keys(data));
 }
 
 // Key helpers
@@ -3674,7 +3668,7 @@ function setupFamilyToolbar() {
 
 function buildMemberCell(m, key, isMe) {
   var html = '<div class="fg-cell">';
-  var md = isMe ? data : (memberPlannerData[m.user_id] || {});
+  var md = memberPlannerData[m.user_id] || {};
   var entry = md[key];
   if (entry && (entry.note || entry.color)) {
     var cls = 'fg-entry' + (entry.color ? ' hl-' + entry.color : '') + (isMe ? ' editable' : '');
@@ -3705,15 +3699,6 @@ function renderFamilyGrid() {
   updateFamilyMonthLabel();
 
   var members = membersForActiveGroup();
-
-  console.log('[renderFamilyGrid] live data keyCount=' + Object.keys(data).length);
-  members.forEach(function(m) {
-    var isMe = currentUser && m.user_id === currentUser.id;
-    var md = isMe ? data : memberPlannerData[m.user_id];
-    var keys = md ? Object.keys(md) : [];
-    var sample = keys.slice(0,3).map(function(k) { return k + ':' + JSON.stringify((md||{})[k]); }).join(' | ');
-    console.log('[renderFamilyGrid] member=' + m.user_id + (isMe ? '(me)' : '(other)') + ' source=' + (isMe ? 'data' : 'memberPlannerData') + ' keyCount=' + keys.length + ' sample=[' + sample + ']');
-  });
 
   var headRow = '<tr><th class="day-col">Day</th>';
   members.forEach(function(m) {
