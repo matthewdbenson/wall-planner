@@ -1528,10 +1528,12 @@ async function loadMemberPlannerData() {
     if (ids.length) {
       var res = await sb.from('planner_data').select('user_id,value').eq('store_key', STORAGE_KEY).in('user_id', ids);
       if (!res.error && res.data) {
-        console.log('[loadMemberPlannerData] raw rows:', res.data.map(function(row) {
-          return { user_id: row.user_id, valueKeys: Object.keys(row.value || {}) };
-        }));
-        res.data.forEach(function(row) { memberPlannerData[row.user_id] = row.value || {}; });
+        res.data.forEach(function(row) {
+          var keys = Object.keys(row.value || {});
+          var sample = keys.slice(0,3).map(function(k) { return k + ':' + JSON.stringify((row.value||{})[k]); }).join(' | ');
+          console.log('[loadMemberPlannerData] row user_id=' + row.user_id + ' keyCount=' + keys.length + ' sample=[' + sample + ']');
+          memberPlannerData[row.user_id] = row.value || {};
+        });
       }
     }
   } catch(e) { console.error('loadMemberPlannerData failed', e); }
@@ -3704,12 +3706,13 @@ function renderFamilyGrid() {
 
   var members = membersForActiveGroup();
 
+  console.log('[renderFamilyGrid] live data keyCount=' + Object.keys(data).length);
   members.forEach(function(m) {
     var isMe = currentUser && m.user_id === currentUser.id;
-    var md = memberPlannerData[m.user_id];
-    console.log('[renderFamilyGrid] member', m.user_id, isMe ? '(me)' : '(other)',
-      '— found in memberPlannerData:', md !== undefined,
-      '— keys:', md ? Object.keys(md) : 'NONE');
+    var md = isMe ? data : memberPlannerData[m.user_id];
+    var keys = md ? Object.keys(md) : [];
+    var sample = keys.slice(0,3).map(function(k) { return k + ':' + JSON.stringify((md||{})[k]); }).join(' | ');
+    console.log('[renderFamilyGrid] member=' + m.user_id + (isMe ? '(me)' : '(other)') + ' source=' + (isMe ? 'data' : 'memberPlannerData') + ' keyCount=' + keys.length + ' sample=[' + sample + ']');
   });
 
   var headRow = '<tr><th class="day-col">Day</th>';
