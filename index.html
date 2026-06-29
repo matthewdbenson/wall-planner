@@ -2858,7 +2858,7 @@ function initAI() {
     var ctx = buildCalendarContext();
     var prompt = 'Please give me a warm, insightful planning snapshot based on my calendar. Tell me how the coming weeks and months look, any important upcoming events, gaps or opportunities worth noting, and anything I might appreciate being reminded of. Keep it to 3-4 paragraphs.\n\n' + ctx;
     try {
-      var res = await fetch('https://api.anthropic.com/v1/messages', {
+      var res = await fetch('/api/claude', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: SYSTEM_PROMPT, messages: [{role: 'user', content: prompt}]})
@@ -2912,7 +2912,7 @@ function initAI() {
       ? [{role: 'user', content: text + '\n\n[Calendar context:]\n' + ctx}]
       : chatHistory.concat([{role: 'user', content: text}]);
     try {
-      var res = await fetch('https://api.anthropic.com/v1/messages', {
+      var res = await fetch('/api/claude', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: SYSTEM_PROMPT, messages: messages})
