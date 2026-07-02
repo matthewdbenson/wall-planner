@@ -27,12 +27,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const messages = [...req.body.messages];
     let requestBody = {
       ...req.body,
-      max_tokens: 2000,
-      tools: [WEB_SEARCH_TOOL],
-      messages
+      max_tokens: 4000,
+      tools: [WEB_SEARCH_TOOL]
     };
 
     for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -42,20 +40,20 @@ export default async function handler(req, res) {
         return res.status(502).json(data);
       }
 
-      // If no tool_use blocks, we have the final text response — return it
-      const toolUseBlocks = (data.content || []).filter(b => b.type === 'tool_use');
-      if (toolUseBlocks.length === 0) {
+      if (data.stop_reason !== 'tool_use') {
         return res.status(200).json(data);
       }
 
-      // Build tool_result blocks for every tool_use in this response
-      const toolResults = toolUseBlocks.map(b => ({
-        type: 'tool_result',
-        tool_use_id: b.id,
-        content: b.type === 'web_search_20250305' ? b.content : []
-      }));
+      // For each tool_use block, send back a tool_result so the loop continues.
+      // web_search is server-side — Anthropic populates the results; content stays empty.
+      const toolResults = (data.content || [])
+        .filter(b => b.type === 'tool_use')
+        .map(b => ({
+          type: 'tool_result',
+          tool_use_id: b.id,
+          content: []
+        }));
 
-      // Append the assistant turn and the tool results, then loop
       requestBody = {
         ...requestBody,
         messages: [
