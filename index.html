@@ -730,6 +730,7 @@
     }
     .day-cell{min-height:0;margin-bottom:1px;overflow:hidden;}
     .past-cross{display:none;}
+    #delegated-banner{display:none!important;}
     .day-note{min-height:0;font-size:9px;font-family:'Caveat',cursive;}
     .day-num{font-size:9px;}
     .day-dow{font-size:7px;}
@@ -737,6 +738,14 @@
     .hol-note{font-size:6px;}
     .month-header{font-size:9px;padding:4px 3px 3px;}
   }
+  .view-switcher{display:flex;align-items:center;gap:8px;position:relative;}
+  .view-switcher-pill{position:relative;background:var(--weekend);border:1px solid var(--border-light);border-radius:20px;padding:2px 4px;}
+  .view-switcher-pill button{border:none;background:var(--text);color:white;border-radius:16px;padding:3px 10px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.06em;cursor:pointer;}
+  .view-switcher-dropdown{display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:160px;z-index:200;padding:4px 0;}
+  .view-switcher-dropdown.visible{display:block;}
+  .view-opt{padding:7px 14px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text);cursor:pointer;white-space:nowrap;}
+  .view-opt:hover{background:var(--weekend);}
+  .view-opt.active{color:var(--text-muted);cursor:default;}
 </style>
 </head>
 <body>
@@ -797,11 +806,29 @@
       <select id="fg-group-select"></select>
     </label>
   </div>
+  <div class="sep tb-chart" id="view-switcher-sep" style="display:none;"></div>
+  <div class="view-switcher tb-chart" id="view-switcher-wrap" style="display:none;">
+    <span class="sw-lbl">Viewing</span>
+    <div class="view-switcher-pill" id="view-switcher-pill">
+      <button id="view-switcher-label">Me</button>
+      <div class="view-switcher-dropdown" id="view-switcher-dropdown"></div>
+    </div>
+  </div>
   <button class="btn-multi-event tb-chart" id="btn-multi-event">+ Event</button>
   <button class="btn-ai" id="btn-ai">&#10022; Ask Claude</button>
   <button class="btn-print tb-chart" id="btn-print">&#9113; Print / PDF</button>
   <button class="btn-settings" id="btn-settings">&#9881; Settings</button>
   <button class="btn-clear" id="btn-clear-all">Clear all</button>
+</div>
+<div id="delegated-banner" style="display:none;background:#fde68a;padding:6px 20px;
+  font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+  text-transform:uppercase;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);">
+  <span>Editing <strong id="delegated-banner-name"></strong>'s calendar</span>
+  <button onclick="switchToOwnView()" style="background:var(--text);color:white;
+    border:none;border-radius:4px;padding:3px 10px;font-size:10px;
+    font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;
+    cursor:pointer;">Back to mine</button>
 </div>
 <div id="print-header">WALL PLANNER <span id="print-year"></span></div>
 <div id="planner-outer"><div id="planner"></div></div>
@@ -1126,6 +1153,33 @@
       <div id="family-groups-list"></div>
       <button class="btn-create-group" id="btn-create-group">+ Create new group</button>
     </div>
+    <div class="setting-section" id="managed-accounts-section">
+      <h3>Managed Accounts</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
+        Create wall planners for family members and edit them on their behalf.
+      </p>
+      <div id="managed-accounts-list"></div>
+      <div style="margin-top:12px;">
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+            letter-spacing:.08em;color:var(--text-muted);display:block;margin-bottom:4px;">Name *</label>
+          <input type="text" id="new-managed-name" placeholder="e.g. Gill"
+            style="width:100%;border:1px solid var(--border-light);border-radius:4px;
+            padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;
+            color:var(--text);background:white;outline:none;">
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;
+            letter-spacing:.08em;color:var(--text-muted);display:block;margin-bottom:4px;">Email (optional — for future login)</label>
+          <input type="email" id="new-managed-email" placeholder="e.g. gill@email.com"
+            style="width:100%;border:1px solid var(--border-light);border-radius:4px;
+            padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;
+            color:var(--text);background:white;outline:none;">
+        </div>
+        <button id="btn-create-managed" class="btn-add-country">Create account</button>
+        <div id="managed-create-status" style="font-size:10px;color:var(--text-muted);margin-top:6px;"></div>
+      </div>
+    </div>
     <div class="setting-section">
       <h3>Account</h3>
       <div class="setting-row">
@@ -1357,6 +1411,10 @@ var alignMode = 'aligned';
 var showGhost = false;
 var data = {};
 var recur = {};
+var managedAccounts = [];
+var activeViewUserId = null;
+var activeViewData = null;
+var activeViewCanEdit = true;
 var iconData = {};
 var holSettings = {enabled:false, countries:[]};
 var holCache = {};
@@ -1551,7 +1609,8 @@ function isToday(y, m, d) {
 }
 
 function effectiveEntry(y, m, d) {
-  var oneOff = data[dayKey(y, m, d)] || {};
+  var activeData = activeViewData || data;
+  var oneOff = activeData[dayKey(y, m, d)] || {};
   var rec = recur[recurKey(m, d)] || {};
   var hasOneOff = oneOff.note || oneOff.color;
   return {
@@ -1640,8 +1699,9 @@ function registerCell(key, cell) {
 }
 
 function applyColorToKey(key, color) {
-  if (!data[key]) data[key] = {};
-  data[key].color = color;
+  var activeData = activeViewData || data;
+  if (!activeData[key]) activeData[key] = {};
+  activeData[key].color = color;
   var cells = cellMap[key] || [];
   cells.forEach(function(cell) {
     for (var i = 1; i <= 5; i++) cell.classList.remove('hl-' + i);
@@ -1650,8 +1710,9 @@ function applyColorToKey(key, color) {
 }
 
 function applyImportantToKey(key, val) {
-  if (!data[key]) data[key] = {};
-  data[key].important = val;
+  var activeData = activeViewData || data;
+  if (!activeData[key]) activeData[key] = {};
+  activeData[key].important = val;
   var cells = cellMap[key] || [];
   cells.forEach(function(cell) {
     if (cell.classList.contains('ghost')) return;
@@ -1692,6 +1753,7 @@ function applyIconToKey(key, iconId) {
 }
 
 function syncNoteText(key, text) {
+  var activeData = activeViewData || data;
   var cells = cellMap[key] || [];
   cells.forEach(function(cell) {
     var ta = cell.querySelector('.day-note');
@@ -1749,7 +1811,7 @@ function attachEvents(cell, note, key) {
 function makeCell(y, m, d, isGhost) {
   var dow = dowMon(y, m, d);
   var key = dayKey(y, m, d);
-  var eff = isGhost ? (data[key] || {}) : effectiveEntry(y, m, d);
+  var eff = isGhost ? ((activeViewData || data)[key] || {}) : effectiveEntry(y, m, d);
   var cell = document.createElement('div');
   var cls = 'day-cell';
   if (isGhost) { cls += ' ghost'; }
@@ -2387,6 +2449,139 @@ function doPrint(size) {
 }
 
 // Settings
+async function loadManagedAccounts() {
+  var res = await sb.from('managed_users')
+    .select('managed_user_id, display_name, can_manager_edit')
+    .eq('managed_by', currentUser.id);
+  managedAccounts = res.data || [];
+}
+
+async function switchToManagedView(managed_user_id) {
+  var account = managedAccounts.find(function(a) { return a.managed_user_id === managed_user_id; });
+  if (!account) return;
+  var res = await fetch('/api/get-managed-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manager_id: currentUser.id, managed_user_id: managed_user_id })
+  });
+  var json = await res.json();
+  if (json.error) { alert('Could not load account: ' + json.error); return; }
+  var rows = json.rows || [];
+  activeViewUserId = managed_user_id;
+  activeViewCanEdit = json.can_edit;
+  var dataRow = rows.find(function(r) { return r.store_key === 'wall-planner-v4'; });
+  activeViewData = dataRow ? dataRow.value : {};
+  document.getElementById('view-switcher-label').textContent = account.display_name;
+  var banner = document.getElementById('delegated-banner');
+  banner.style.display = 'flex';
+  document.getElementById('delegated-banner-name').textContent = account.display_name;
+  render();
+  renderMiniOverview();
+}
+
+function switchToOwnView() {
+  activeViewUserId = null;
+  activeViewData = null;
+  activeViewCanEdit = true;
+  document.getElementById('view-switcher-label').textContent =
+    profiles[currentUser.id] || currentUser.email.split('@')[0];
+  document.getElementById('delegated-banner').style.display = 'none';
+  render();
+  renderMiniOverview();
+}
+
+function initManagedAccounts() {
+  var _origSave = saveData;
+  saveData = function() {
+    if (activeViewUserId) {
+      if (!activeViewCanEdit) return;
+      fetch('/api/save-managed-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manager_id: currentUser.id,
+          managed_user_id: activeViewUserId,
+          store_key: 'wall-planner-v4',
+          value: activeViewData
+        })
+      });
+      return;
+    }
+    _origSave();
+  };
+}
+
+function initViewSwitcher() {
+  if (!managedAccounts.length) return;
+  var wrap = document.getElementById('view-switcher-wrap');
+  var sep = document.getElementById('view-switcher-sep');
+  var pill = document.getElementById('view-switcher-pill');
+  var dropdown = document.getElementById('view-switcher-dropdown');
+  var label = document.getElementById('view-switcher-label');
+  wrap.style.display = 'flex';
+  sep.style.display = 'block';
+  label.textContent = profiles[currentUser.id] || currentUser.email.split('@')[0];
+  function buildDropdown() {
+    dropdown.innerHTML = '';
+    var ownOpt = document.createElement('div');
+    ownOpt.className = 'view-opt' + (!activeViewUserId ? ' active' : '');
+    ownOpt.textContent = profiles[currentUser.id] || currentUser.email.split('@')[0];
+    ownOpt.addEventListener('click', function() { switchToOwnView(); dropdown.classList.remove('visible'); });
+    dropdown.appendChild(ownOpt);
+    managedAccounts.forEach(function(acc) {
+      var opt = document.createElement('div');
+      opt.className = 'view-opt' + (activeViewUserId === acc.managed_user_id ? ' active' : '');
+      opt.textContent = acc.display_name;
+      opt.addEventListener('click', function() { switchToManagedView(acc.managed_user_id); dropdown.classList.remove('visible'); });
+      dropdown.appendChild(opt);
+    });
+  }
+  pill.addEventListener('click', function(e) {
+    e.stopPropagation();
+    buildDropdown();
+    dropdown.classList.toggle('visible');
+  });
+  document.addEventListener('click', function() { dropdown.classList.remove('visible'); });
+}
+
+function renderManagedAccountsList() {
+  var list = document.getElementById('managed-accounts-list');
+  if (!list) return;
+  if (!managedAccounts.length) {
+    list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);font-style:italic;">No managed accounts yet.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  managedAccounts.forEach(function(acc) {
+    var row = document.createElement('div');
+    row.className = 'country-row';
+    row.style.justifyContent = 'space-between';
+    row.innerHTML =
+      '<span style="font-size:12px;color:var(--text);font-weight:500;">' + acc.display_name + '</span>' +
+      '<span style="font-size:10px;color:var(--text-muted);">' + (acc.can_manager_edit ? 'Can edit' : 'View only') + '</span>' +
+      '<button class="country-remove" data-mid="' + acc.managed_user_id + '" title="Revoke access">&#10005;</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.country-remove').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mid = btn.dataset.mid;
+      var acc = managedAccounts.find(function(a) { return a.managed_user_id === mid; });
+      if (!confirm('Revoke access to ' + (acc ? acc.display_name : mid) + '\'s calendar?')) return;
+      sb.from('delegated_access').delete()
+        .eq('manager_id', currentUser.id).eq('managed_user_id', mid)
+        .then(function() {
+          sb.from('managed_users').delete()
+            .eq('managed_by', currentUser.id).eq('managed_user_id', mid)
+            .then(function() {
+              managedAccounts = managedAccounts.filter(function(a) { return a.managed_user_id !== mid; });
+              renderManagedAccountsList();
+              initViewSwitcher();
+            });
+        });
+    });
+  });
+}
+
 function initSettings() {
   var overlay = document.getElementById('settings-overlay');
   var drawer = document.getElementById('settings-drawer');
@@ -2400,6 +2595,7 @@ function initSettings() {
     document.getElementById('display-name-input').value = (currentUser && profiles[currentUser.id]) || '';
     renderCountryList(); renderCountrySelect();
     renderFamilyGroups();
+    renderManagedAccountsList();
   }
   function closeSettings() { overlay.classList.remove('visible'); drawer.classList.remove('visible'); }
 
@@ -2742,6 +2938,28 @@ function initSettings() {
       if (res.error) { console.error('create group failed', res.error); return; }
       refreshFamilyUI();
     });
+  });
+
+  document.getElementById('btn-create-managed').addEventListener('click', async function() {
+    var name = document.getElementById('new-managed-name').value.trim();
+    var email = document.getElementById('new-managed-email').value.trim();
+    var status = document.getElementById('managed-create-status');
+    if (!name) { status.textContent = 'Name is required.'; status.style.color = '#c0392b'; return; }
+    status.textContent = 'Creating...'; status.style.color = 'var(--text-muted)';
+    var res = await fetch('/api/create-managed-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ display_name: name, email: email || null, manager_id: currentUser.id })
+    });
+    var json = await res.json();
+    if (json.error) { status.textContent = 'Error: ' + json.error; status.style.color = '#c0392b'; return; }
+    status.textContent = 'Created ✓'; status.style.color = 'var(--text)';
+    document.getElementById('new-managed-name').value = '';
+    document.getElementById('new-managed-email').value = '';
+    await loadManagedAccounts();
+    renderManagedAccountsList();
+    initViewSwitcher();
+    setTimeout(function() { status.textContent = ''; }, 2000);
   });
 }
 
@@ -3387,7 +3605,7 @@ function renderMiniOverview() {
       var dow = dowMon(year, m, d);
       var eff = effectiveEntry(year, m, d);
       var isWknd = isWeekend(dow);
-      var isImp = !!(data[key] || {}).important;
+      var isImp = !!((activeViewData || data)[key] || {}).important;
       var today = isToday(year, m, d);
 
       // Base fill
@@ -3833,10 +4051,13 @@ async function bootApp() {
   await loadFamilyData();
   await loadMemberPlannerData();
   await loadProfiles();
+  await loadManagedAccounts();
   loadLegendLabels();
   render();
   initContextMenu();
+  initManagedAccounts();
   initSettings();
+  initViewSwitcher();
   initPrint();
   initAI();
   initProjects();
