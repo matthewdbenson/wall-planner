@@ -1154,6 +1154,21 @@
       <div id="family-groups-list"></div>
       <button class="btn-create-group" id="btn-create-group">+ Create new group</button>
     </div>
+    <div class="setting-section" id="share-calendar-section">
+      <h3>Share My Calendar</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
+        Let a family group member edit your calendar on your behalf.
+      </p>
+      <div id="share-access-list"></div>
+      <div style="margin-top:10px;">
+        <select id="share-with-select" style="width:100%;border:1px solid var(--border-light);
+          border-radius:4px;padding:6px 9px;font-size:12px;font-family:'DM Sans',sans-serif;
+          color:var(--text);background:white;outline:none;margin-bottom:8px;">
+          <option value="">Choose a family member...</option>
+        </select>
+        <button id="btn-grant-access" class="btn-add-country">Grant edit access</button>
+      </div>
+    </div>
     <div class="setting-section" id="managed-accounts-section">
       <h3>Managed Accounts</h3>
       <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
@@ -2451,10 +2466,24 @@ function doPrint(size) {
 
 // Settings
 async function loadManagedAccounts() {
-  var res = await sb.from('managed_users')
+  var ownRes = await sb.from('managed_users')
     .select('managed_user_id, display_name, can_manager_edit')
     .eq('managed_by', currentUser.id);
-  managedAccounts = res.data || [];
+  var grantedRes = await sb.from('delegated_access')
+    .select('managed_user_id, can_edit')
+    .eq('manager_id', currentUser.id);
+  var granted = (grantedRes.data || []).filter(function(g) {
+    return !(ownRes.data || []).some(function(m) { return m.managed_user_id === g.managed_user_id; });
+  });
+  var grantedWithNames = granted.map(function(g) {
+    var member = familyMembers.find(function(m) { return m.user_id === g.managed_user_id; });
+    return {
+      managed_user_id: g.managed_user_id,
+      display_name: member ? displayName(g.managed_user_id, member.email) : 'Unknown',
+      can_manager_edit: g.can_edit
+    };
+  });
+  managedAccounts = (ownRes.data || []).concat(grantedWithNames);
 }
 
 async function switchToManagedView(managed_user_id) {
@@ -2601,6 +2630,52 @@ function renderManagedAccountsList() {
   });
 }
 
+function populateShareWithSelect() {
+  var sel = document.getElementById('share-with-select');
+  if (!sel) return;
+  var allMemberIds = new Set();
+  familyMembers.forEach(function(m) { if (m.user_id !== currentUser.id) allMemberIds.add(m.user_id); });
+  sel.innerHTML = '<option value="">Choose a family member...</option>';
+  allMemberIds.forEach(function(uid) {
+    var member = familyMembers.find(function(m) { return m.user_id === uid; });
+    var opt = document.createElement('option');
+    opt.value = uid;
+    opt.textContent = displayName(uid, member ? member.email : '');
+    sel.appendChild(opt);
+  });
+}
+
+async function renderShareAccessList() {
+  var list = document.getElementById('share-access-list');
+  if (!list) return;
+  var res = await sb.from('delegated_access')
+    .select('manager_id, can_edit')
+    .eq('managed_user_id', currentUser.id);
+  var grants = res.data || [];
+  if (!grants.length) {
+    list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);font-style:italic;">Nobody has edit access yet.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  grants.forEach(function(g) {
+    var member = familyMembers.find(function(m) { return m.user_id === g.manager_id; });
+    var name = member ? displayName(g.manager_id, member.email) : g.manager_id;
+    var row = document.createElement('div');
+    row.className = 'country-row';
+    row.style.justifyContent = 'space-between';
+    row.innerHTML =
+      '<span style="font-size:12px;color:var(--text);font-weight:500;">' + name + '</span>' +
+      '<button class="country-remove" data-gid="' + g.manager_id + '" title="Revoke">&#10005;</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.country-remove').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      await sb.rpc('revoke_edit_access', { grantee_id_param: btn.dataset.gid });
+      renderShareAccessList();
+    });
+  });
+}
+
 function initSettings() {
   var overlay = document.getElementById('settings-overlay');
   var drawer = document.getElementById('settings-drawer');
@@ -2615,8 +2690,19 @@ function initSettings() {
     renderCountryList(); renderCountrySelect();
     renderFamilyGroups();
     renderManagedAccountsList();
+    populateShareWithSelect();
+    renderShareAccessList();
   }
   function closeSettings() { overlay.classList.remove('visible'); drawer.classList.remove('visible'); }
+
+  document.getElementById('btn-grant-access').addEventListener('click', async function() {
+    var sel = document.getElementById('share-with-select');
+    if (!sel.value) return;
+    var res = await sb.rpc('grant_edit_access', { grantee_id_param: sel.value });
+    if (res.error) { alert('Could not grant access: ' + res.error.message); return; }
+    sel.value = '';
+    renderShareAccessList();
+  });
 
   document.getElementById('btn-settings').addEventListener('click', openSettings);
   document.getElementById('drawer-close').addEventListener('click', closeSettings);
