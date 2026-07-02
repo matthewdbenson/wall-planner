@@ -385,8 +385,9 @@
   .country-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;}
   .country-remove:hover{color:#c0392b;}
   .country-add-row{display:flex;gap:6px;margin-top:8px;}
-  #country-select{flex:1;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-light);
+  #country-select,.add-to-group-select{flex:1;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-light);
     border-radius:4px;padding:5px 7px;background:white;color:var(--text);outline:none;}
+  .add-to-group-select{flex:none;}
   .btn-add-country{background:var(--text);color:white;border:none;border-radius:4px;padding:5px 12px;
     font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
   #about-me{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:7px 9px;
@@ -2560,6 +2561,24 @@ function renderManagedAccountsList() {
       '<span style="font-size:12px;color:var(--text);font-weight:500;">' + acc.display_name + '</span>' +
       '<span style="font-size:10px;color:var(--text-muted);">' + (acc.can_manager_edit ? 'Can edit' : 'View only') + '</span>' +
       '<button class="country-remove" data-mid="' + acc.managed_user_id + '" title="Revoke access">&#10005;</button>';
+    var ownedGroups = familyGroups.filter(function(g) { return g.created_by === currentUser.id; });
+    if (ownedGroups.length) {
+      var groupBtn = document.createElement('select');
+      groupBtn.className = 'add-to-group-select';
+      groupBtn.innerHTML = '<option value="">Add to group...</option>' +
+        ownedGroups.map(function(g) { return '<option value="' + g.id + '">' + g.name + '</option>'; }).join('');
+      groupBtn.addEventListener('change', async function() {
+        if (!groupBtn.value) return;
+        var res = await sb.rpc('add_managed_user_to_group', {
+          group_id_param: groupBtn.value,
+          managed_user_id_param: acc.managed_user_id
+        });
+        if (res.error) { alert('Could not add: ' + res.error.message); groupBtn.value = ''; return; }
+        await loadFamilyData();
+        renderManagedAccountsList();
+      });
+      row.appendChild(groupBtn);
+    }
     list.appendChild(row);
   });
   list.querySelectorAll('.country-remove').forEach(function(btn) {
