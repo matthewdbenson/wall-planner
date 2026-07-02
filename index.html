@@ -388,6 +388,14 @@
   #country-select,.add-to-group-select{flex:1;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-light);
     border-radius:4px;padding:5px 7px;background:white;color:var(--text);outline:none;}
   .add-to-group-select{flex:none;}
+  #family-grid th[draggable="true"]{cursor:grab;}
+  #family-grid th.dragging{opacity:0.4;}
+  #family-grid th.drag-over{border-left:2px solid var(--text);}
+  .fg-hide-btn{background:none;border:none;cursor:pointer;font-size:11px;opacity:0.5;margin-left:6px;padding:2px;}
+  .fg-hide-btn:hover{opacity:1;}
+  .fg-hidden-strip{font-size:10px;color:var(--text-muted);font-style:italic;white-space:nowrap;padding:8px 12px;}
+  .fg-hidden-strip button{background:none;border:none;text-decoration:underline;color:var(--text-muted);cursor:pointer;font-size:10px;}
+  .fg-hidden-strip button:hover{color:var(--text);}
   .btn-add-country{background:var(--text);color:white;border:none;border-radius:4px;padding:5px 12px;
     font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
   #about-me{width:100%;border:1px solid var(--border-light);border-radius:4px;padding:7px 9px;
@@ -1543,6 +1551,9 @@ var profiles = {}; // keyed by user_id -> display name string
 var familyMonth = new Date().getMonth();
 var familyYear = new Date().getFullYear();
 var activeFamilyGroup = null;
+var gridMemberOrder = [];
+var gridHiddenMembers = [];
+var currentGroupMembers = [];
 
 // Distinct member user_ids across all the user's groups
 function allMemberUserIds() {
@@ -4019,6 +4030,69 @@ function buildMemberCell(m, key, isMe) {
   return html;
 }
 
+async function loadGridPrefs(groupId) {
+  var res = await sb.from('family_grid_prefs')
+    .select('member_order, hidden_members')
+    .eq('user_id', currentUser.id)
+    .eq('group_id', groupId)
+    .maybeSingle();
+  gridMemberOrder = (res.data && res.data.member_order) || [];
+  gridHiddenMembers = (res.data && res.data.hidden_members) || [];
+}
+
+function saveGridPrefs(groupId) {
+  sb.from('family_grid_prefs').upsert({
+    user_id: currentUser.id,
+    group_id: groupId,
+    member_order: gridMemberOrder,
+    hidden_members: gridHiddenMembers,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,group_id' });
+}
+
+function getOrderedVisibleMembers(allMembers) {
+  var visible = allMembers.filter(function(m) {
+    return gridHiddenMembers.indexOf(m.user_id) === -1;
+  });
+  if (gridMemberOrder.length) {
+    visible.sort(function(a, b) {
+      var ai = gridMemberOrder.indexOf(a.user_id);
+      var bi = gridMemberOrder.indexOf(b.user_id);
+      if (ai === -1) ai = 999;
+      if (bi === -1) bi = 999;
+      return ai - bi;
+    });
+  }
+  return visible;
+}
+
+function makeHeaderDraggable(th, userId) {
+  th.draggable = true;
+  th.addEventListener('dragstart', function(e) {
+    e.dataTransfer.setData('text/plain', userId);
+    th.classList.add('dragging');
+  });
+  th.addEventListener('dragend', function() { th.classList.remove('dragging'); });
+  th.addEventListener('dragover', function(e) { e.preventDefault(); th.classList.add('drag-over'); });
+  th.addEventListener('dragleave', function() { th.classList.remove('drag-over'); });
+  th.addEventListener('drop', function(e) {
+    e.preventDefault();
+    th.classList.remove('drag-over');
+    var draggedId = e.dataTransfer.getData('text/plain');
+    if (draggedId === userId) return;
+    var order = gridMemberOrder.length ? gridMemberOrder.slice()
+      : getOrderedVisibleMembers(currentGroupMembers).map(function(m) { return m.user_id; });
+    var from = order.indexOf(draggedId);
+    var to = order.indexOf(userId);
+    if (from === -1) { order.push(draggedId); from = order.length - 1; }
+    order.splice(from, 1);
+    order.splice(to, 0, draggedId);
+    gridMemberOrder = order;
+    saveGridPrefs(activeFamilyGroup.id);
+    renderFamilyGrid();
+  });
+}
+
 function renderFamilyGrid() {
   var head = document.getElementById('family-grid-head');
   var body = document.getElementById('family-grid-body');
@@ -4026,16 +4100,63 @@ function renderFamilyGrid() {
   if (!activeFamilyGroup && familyGroups.length) activeFamilyGroup = familyGroups[0];
   updateFamilyMonthLabel();
 
-  var members = membersForActiveGroup();
+  currentGroupMembers = membersForActiveGroup();
+  var members = getOrderedVisibleMembers(currentGroupMembers);
 
-  var headRow = '<tr><th class="day-col">Day</th>';
+  // Build header as DOM so drag listeners can be attached directly
+  var htr = document.createElement('tr');
+  var dayTh = document.createElement('th');
+  dayTh.className = 'day-col';
+  dayTh.textContent = 'Day';
+  htr.appendChild(dayTh);
+
   members.forEach(function(m) {
     var isMe = currentUser && m.user_id === currentUser.id;
-    var name = memberDisplayName(m) + (isMe ? ' (me)' : '');
-    headRow += '<th class="' + (isMe ? 'me-col' : '') + '"><span class="member-avatar">' + escHtml(memberInitial(m)) + '</span>' + escHtml(name) + '</th>';
+    var th = document.createElement('th');
+    if (isMe) th.className = 'me-col';
+    var avatarSpan = document.createElement('span');
+    avatarSpan.className = 'member-avatar';
+    avatarSpan.textContent = memberInitial(m);
+    th.appendChild(avatarSpan);
+    th.appendChild(document.createTextNode(memberDisplayName(m) + (isMe ? ' (me)' : '')));
+    var hideBtn = document.createElement('button');
+    hideBtn.className = 'fg-hide-btn';
+    hideBtn.dataset.uid = m.user_id;
+    hideBtn.title = 'Hide this column';
+    hideBtn.innerHTML = '&#128065;';
+    th.appendChild(hideBtn);
+    makeHeaderDraggable(th, m.user_id);
+    htr.appendChild(th);
   });
-  headRow += '</tr>';
-  head.innerHTML = headRow;
+
+  if (gridHiddenMembers.length) {
+    var stripTh = document.createElement('th');
+    stripTh.className = 'fg-hidden-strip';
+    stripTh.innerHTML = gridHiddenMembers.length + ' hidden — <button id="fg-show-all">show all</button>';
+    htr.appendChild(stripTh);
+  }
+
+  head.innerHTML = '';
+  head.appendChild(htr);
+
+  head.querySelectorAll('.fg-hide-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var uid = btn.dataset.uid;
+      if (gridHiddenMembers.indexOf(uid) === -1) gridHiddenMembers.push(uid);
+      saveGridPrefs(activeFamilyGroup.id);
+      renderFamilyGrid();
+    });
+  });
+
+  var showAllBtn = document.getElementById('fg-show-all');
+  if (showAllBtn) {
+    showAllBtn.addEventListener('click', function() {
+      gridHiddenMembers = [];
+      saveGridPrefs(activeFamilyGroup.id);
+      renderFamilyGrid();
+    });
+  }
 
   var days = daysInMonth(familyYear, familyMonth);
   var rows = '';
@@ -4050,6 +4171,7 @@ function renderFamilyGrid() {
       var isMe = currentUser && m.user_id === currentUser.id;
       tr += '<td class="' + (isWknd ? 'weekend' : '') + '">' + buildMemberCell(m, key, isMe) + '</td>';
     });
+    if (gridHiddenMembers.length) tr += '<td></td>';
     tr += '</tr>';
     rows += tr;
   }
@@ -4072,7 +4194,10 @@ function initFamilyGrid() {
   var groupSel = document.getElementById('fg-group-select');
   groupSel.addEventListener('change', function() {
     var g = groupById(groupSel.value);
-    if (g) { activeFamilyGroup = g; renderFamilyGrid(); }
+    if (g) {
+      activeFamilyGroup = g;
+      loadGridPrefs(g.id).then(renderFamilyGrid);
+    }
   });
 
   // Activate family page + refresh member data when its tab is clicked
@@ -4081,7 +4206,13 @@ function initFamilyGrid() {
       if (tab.dataset.page === 'family') {
         document.body.classList.add('page-family');
         setupFamilyToolbar();
-        Promise.all([loadMemberPlannerData(), loadProfiles()]).then(renderFamilyGrid);
+        Promise.all([loadMemberPlannerData(), loadProfiles()]).then(function() {
+          if (activeFamilyGroup) {
+            loadGridPrefs(activeFamilyGroup.id).then(renderFamilyGrid);
+          } else {
+            renderFamilyGrid();
+          }
+        });
       } else {
         document.body.classList.remove('page-family');
       }
